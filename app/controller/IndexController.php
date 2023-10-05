@@ -3,6 +3,7 @@
 namespace app\controller;
 
 use support\Request;
+use think\facade\Db;
 
 class IndexController
 {
@@ -24,5 +25,12 @@ class IndexController
     {
         return json(['code' => 0, 'msg' => 'ok']);
     }
-
+    public function get(){
+        $hello = trans('hello'); // 你好 世界!
+        return response($hello);
+    }
+    public function sql(){
+       //return Db::name('ai_users')->select();
+      var_dump(\support\Db::table('ai_users')->get()->toArray());
+    }
 }

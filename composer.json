@@ -26,7 +26,32 @@
   "require": {
     "php": ">=7.2",
     "workerman/webman-framework": "^1.5.0",
-    "monolog/monolog": "^2.0"
+    "monolog/monolog": "^2.0",
+    "webman/admin": "^0.6.18",
+    "yzh52521/webman-task": "dev-lv",
+    "illuminate/redis": "^8.83",
+    "illuminate/events": "^8.83",
+    "vlucas/phpdotenv": "^5.5",
+    "workerman/crontab": "^1.0",
+    "webman/event": "^1.0",
+    "workerman/validation": "^3.0",
+    "symfony/translation": "^5.4",
+    "intervention/image": "^2.7",
+    "webman/console": "^1.2",
+    "webman/push": "^1.0",
+    "psr/container": "^1.1.1",
+    "php-di/php-di": "^6",
+    "doctrine/annotations": "^1.14",
+    "guzzlehttp/guzzle": "^7.8",
+    "illuminate/database": "^8.83",
+    "illuminate/pagination": "^8.83",
+    "symfony/var-dumper": "^5.4",
+    "kkokk/poster": "^2.2",
+    "webman/redis-queue": "^1.2",
+    "zjkal/time-helper": "^1.1",
+    "webman/think-orm": "^1.1",
+    "webman/log": "^1.1.6",
+    "webman/nat-client": "^1.0"
   },
   "suggest": {
     "ext-event": "For better performance. "
