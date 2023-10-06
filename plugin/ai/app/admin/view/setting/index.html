@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>AI设置</title>
+  <link rel="stylesheet" href="/app/admin/component/pear/css/pear.css" />
+  <link rel="stylesheet" href="/app/admin/admin/css/reset.css" />
+</head>
+<body class="pear-container">
+
+
+<div class="layui-card">
+  <div class="layui-card-body">
+
+    <div class="layui-tab layui-tab-brief">
+      <ul class="layui-tab-title">
+        <li class="layui-this">通用设置</li>
+        <li>ChatGPT设置</li>
+        <li>Midjourney设置</li>
+        <li>模型设置</li>
+        <li>套餐设置</li>
+        <li>角色分类设置</li>
+        <li>敏感词设置</li>
+      </ul>
+
+      <div class="layui-tab-content">
+
+        <div class="layui-tab-item layui-show">
+          <form class="layui-form" lay-filter="setting" onsubmit="return false">
+            <div class="layui-form-item">
+              <label class="layui-form-label">开启支付</label>
+              <div class="layui-input-inline">
+                <input type="checkbox" name="enable_payment" lay-skin="switch">
+              </div>
+            </div>
+            <div class="layui-form-item">
+              <label class="layui-form-label">必须登录</label>
+              <div class="layui-input-inline">
+                <input type="checkbox" name="need_login" lay-skin="switch">
+              </div>
+            </div>
+            <div class="layui-form-item">
+              <div class="layui-input-block">
+                <button class="pear-btn pear-btn-primary" lay-submit="" lay-filter="setting">保 存</button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div class="layui-tab-item">
+          <form class="layui-form" lay-filter="chatgpt" onsubmit="return false">
+            <div class="layui-form-item">
+              <label class="layui-form-label">接口地址</label>
+              <div class="layui-input-inline">
+                <input type="text" name="api_host" required  lay-verify="required" placeholder="请输入输入框内容" autocomplete="off" class="layui-input">
+              </div>
+              <div class="layui-form-mid layui-font-orange">海外服务器请使用 https://api.openai.com</div>
+            </div>
+
+            <div class="layui-form-item">
+              <label class="layui-form-label">开启GPT3</label>
+              <div class="layui-input-inline">
+                <input type="checkbox" name="enable_gpt3" lay-skin="switch">
+              </div>
+              <div class="layui-form-mid layui-font-orange">注意midjourney中文翻译依赖开启GPT3</div>
+            </div>
+            <div class="layui-form-item">
+              <label class="layui-form-label">注册赠送</label>
+              <div class="layui-input-inline">
+                <input type="text" name="gpt3_reg_free_count" required  lay-verify="required" placeholder="请输入输入框内容" autocomplete="off" class="layui-input">
+              </div>
+              <div class="layui-form-mid">个GPT3.5消息</div>
+            </div>
+            <div class="layui-form-item">
+              <label class="layui-form-label">每日赠送</label>
+              <div class="layui-input-inline">
+                <input type="text" name="gpt3_day_free_count" required  lay-verify="required" placeholder="请输入输入框内容" autocomplete="off" class="layui-input">
+              </div>
+              <div class="layui-form-mid">个GPT3.5消息</div>
+              <div class="layui-form-mid layui-font-orange">未登录用户及非会员使用</div>
+            </div>
+
+            <div class="layui-form-item">
+              <label class="layui-form-label">开启GPT4</label>
+              <div class="layui-input-inline">
+                <input type="checkbox" name="enable_gpt4" lay-skin="switch">
+              </div>
+            </div>
+            <div class="layui-form-item">
+              <label class="layui-form-label">注册赠送</label>
+              <div class="layui-input-inline">
+                <input type="text" name="gpt4_reg_free_count" required  lay-verify="required" placeholder="请输入输入框内容" autocomplete="off" class="layui-input">
+              </div>
+              <div class="layui-form-mid">个GPT4.0消息</div>
+            </div>
+            <div class="layui-form-item">
+              <label class="layui-form-label">每日赠送</label>
+              <div class="layui-input-inline">
+                <input type="text" name="gpt4_day_free_count" required  lay-verify="required" placeholder="请输入输入框内容" autocomplete="off" class="layui-input">
+              </div>
+              <div class="layui-form-mid">个GPT4.0消息</div>
+              <div class="layui-form-mid layui-font-orange">未登录用户及非会员使用</div>
+            </div>
+
+            <div class="layui-form-item">
+              <label class="layui-form-label">开启DALL.E</label>
+              <div class="layui-input-inline">
+                <input type="checkbox" name="enable_dalle" lay-skin="switch">
+              </div>
+            </div>
+            <div class="layui-form-item">
+              <label class="layui-form-label">注册赠送</label>
+              <div class="layui-input-inline">
+                <input type="text" name="dalle_reg_free_count" required  lay-verify="required" placeholder="请输入输入框内容" autocomplete="off" class="layui-input">
+              </div>
+              <div class="layui-form-mid">个DALL.E作图</div>
+            </div>
+            <div class="layui-form-item">
+              <label class="layui-form-label">每日赠送</label>
+              <div class="layui-input-inline">
+                <input type="text" name="dalle_day_free_count" required  lay-verify="required" placeholder="请输入输入框内容" autocomplete="off" class="layui-input">
+              </div>
+              <div class="layui-form-mid">个DALL.E作图</div>
+              <div class="layui-form-mid layui-font-orange">未登录用户及非会员使用</div>
+            </div>
+
+            <div class="layui-form-item">
+              <div class="layui-input-block">
+                <button class="pear-btn pear-btn-primary" lay-submit="" lay-filter="chatgpt">保 存</button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div class="layui-tab-item">
+          <form class="layui-form" lay-filter="midjourney" onsubmit="return false">
+            <div class="layui-form-item">
+              <label class="layui-form-label">开启</label>
+              <div class="layui-input-inline">
+                <input type="checkbox" name="enable" lay-skin="switch">
+              </div>
+            </div>
+            <div class="layui-form-item">
+              <label class="layui-form-label">接口地址</label>
+              <div class="layui-input-inline">
+                <input type="text" name="api_host" required  lay-verify="required" placeholder="请输入输入框内容" autocomplete="off" class="layui-input">
+              </div>
+            </div>
+            <div class="layui-form-item">
+              <label class="layui-form-label">注册赠送</label>
+              <div class="layui-input-inline">
+                <input type="text" name="reg_free_count" required  lay-verify="required" placeholder="请输入输入框内容" autocomplete="off" class="layui-input">
+              </div>
+              <div class="layui-form-mid">个Midjourney作图</div>
+            </div>
+            <div class="layui-form-item">
+              <label class="layui-form-label">每日赠送</label>
+              <div class="layui-input-inline">
+                <input type="text" name="day_free_count" required  lay-verify="required" placeholder="请输入输入框内容" autocomplete="off" class="layui-input">
+              </div>
+              <div class="layui-form-mid">个Midjourney作图</div>
+              <div class="layui-form-mid layui-font-orange">未登录用户及非会员使用</div>
+            </div>
+            <div class="layui-form-item">
+              <div class="layui-input-block">
+                <button class="pear-btn pear-btn-primary" lay-submit="" lay-filter="midjourney">保 存</button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div class="layui-tab-item">
+          <form class="layui-form" lay-filter="model" action="" onsubmit="return false">
+            <div class="layui-form-item layui-form-text">
+              <label class="layui-form-label">模型配置</label>
+              <div class="layui-input-inline">
+                <textarea name="model" placeholder="json数据" style="width:30em;height:30em;" class="layui-textarea"></textarea>
+              </div>
+            </div>
+            <div class="layui-form-item">
+              <div class="layui-input-block">
+                <button class="pear-btn pear-btn-primary" lay-submit="" lay-filter="model">保 存</button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div class="layui-tab-item">
+          <form class="layui-form" lay-filter="plan" action="" onsubmit="return false">
+            <div class="layui-form-item layui-form-text">
+              <label class="layui-form-label">套餐配置</label>
+              <div class="layui-input-inline">
+                <textarea name="plan" placeholder="json数据" style="width:30em;height:30em;" class="layui-textarea"></textarea>
+              </div>
+            </div>
+            <div class="layui-form-item">
+              <div class="layui-input-block">
+                <button class="pear-btn pear-btn-primary" lay-submit="" lay-filter="plan">保 存</button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div class="layui-tab-item">
+          <form class="layui-form" lay-filter="category"  action="" onsubmit="return false">
+            <div class="layui-form-item layui-form-text">
+              <label class="layui-form-label">角色分类</label>
+              <div class="layui-input-inline">
+                <textarea name="category" placeholder="每行一个" style="width:30em;height:30em;" class="layui-textarea"></textarea>
+              </div>
+            </div>
+            <div class="layui-form-item">
+              <div class="layui-input-block">
+                <button class="pear-btn pear-btn-primary" lay-submit="" lay-filter="category">保 存</button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div class="layui-tab-item">
+          <form class="layui-form" lay-filter="sensitive-word"  action="" onsubmit="return false">
+            <div class="layui-form-item layui-form-text">
+              <label class="layui-form-label">敏感词设置</label>
+              <div class="layui-input-inline">
+                <textarea name="sensitive-word" placeholder="每行一个" style="width:30em;height:30em;" class="layui-textarea"></textarea>
+              </div>
+            </div>
+            <div class="layui-form-item">
+              <div class="layui-input-block">
+                <button class="pear-btn pear-btn-primary" lay-submit="" lay-filter="sensitive-word">保 存</button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+
+<script src="/app/admin/component/layui/layui.js"></script>
+<script src="/app/admin/component/pear/pear.js"></script>
+<script src="/app/admin/admin/js/permission.js"></script>
+<script src="/app/admin/admin/js/common.js"></script>
+
+
+<!-- 标签设置 -->
+<script>
+
+
+</script>
+
+<script>
+  layui.use(["form", "popup"], function(){
+    let form = layui.form;
+    let $ = layui.jquery;
+
+    // 基础配置
+    $.ajax({
+      url: "/app/ai/admin/setting/select",
+      success: function (res) {
+        if (res.code) {
+          return layui.popup.failure(res.msg);
+        }
+        for (let name in res.data) {
+          if (["category", "model", "plan", "sensitive-word"].includes(name)) {
+            let obj = {};
+            obj[name] = res.data[name];
+            form.val(name, obj);
+          } else {
+            form.val(name, res.data[name]);
+          }
+          form.on("submit("+name+")", function(data){
+            $.ajax({
+              url: "/app/ai/admin/"+name+"/update",
+              dataType: "json",
+              type: "POST",
+              data: data.field,
+              success: function (res) {
+                if (res.code) {
+                  return layui.popup.failure(res.msg);
+                }
+                return layui.popup.success("操作成功");
+              }
+            });
+            return false;
+          });
+        }
+      }
+    });
+
+});
+</script>
+</body>
+</html>
+

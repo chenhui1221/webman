@@ -1,0 +1,17 @@
+<?=plugin\user\api\Template::header('用户登录')?>
+
+<script src="/app/ai/js/qrcode.min.js"></script>
+<div id="qrcode"></div>
+<script type="text/javascript">
+    new QRCode(document.getElementById("qrcode"), "<?=$codeUrl?>");
+</script>
+
+<style>
+    .bg-light {
+        background-color: #fff !important;
+    }
+    #qrcode img {
+        height:200px;width:200px;
+    }
+</style>
+<?=plugin\user\api\Template::footer()?>

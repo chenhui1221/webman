@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link href="/app/ai/css/bootstrap.min.css" rel="stylesheet">
+  <script src="/app/ai/js/jquery.min.js"></script>
+  <script src="/app/ai/js/bootstrap.bundle.min.js"></script>
+  <title>webman AI助手</title>
+</head>
+
+<body class="bg-light ready sticky overflow-hidden">
+  <!-- CSS -->
+  <link rel="stylesheet" href="/app/ai/css/app.css?v=v=<?=$css_version?>">
+
+  <!-- webman ai 主应用 -->
+  <div class="h-100 d-flex align-items-center justify-content-center" id="app">
+    <div class="loading" v-if="showLoading">
+      <div class="dot dot1"></div>
+      <div class="dot dot2"></div>
+      <div class="dot dot3"></div>
+    </div>
+    <div class="flex-column-reverse flex-md-row container-fluid h-100 d-flex bg-white shadow-sm" :class="{'small-window':isSmallWindow}" v-cloak @click="hideAll">
+      <!-- 左侧工具栏 -->
+      <div class="left-bar border-right" v-show="showAddressBook">
+        <img :src="loginUser.avatar" class="d-none d-md-flex avatar shadow-sm">
+        <div class="mt-md-4 iconfont iconfont-bg" :class="{selected:module==='chat'}" @click="switchModule('chat')">
+          {{module==="chat"?"&#xe9f4;":"&#xe9f3;"}}
+        </div>
+        <div class="mt-md-4 iconfont iconfont-bg" :class="{selected:module==='market'}" @click="switchModule('market')">
+          {{module==="market"?"&#xe9f5;":"&#xe9f6;"}}
+        </div>
+        <div class="mt-md-4 iconfont iconfont-bg" v-if="setting.enablePayment" :class="{selected:module==='vip'}" @click="switchModule('vip')">
+          {{module==="vip"?"&#xea40;":"&#xea41;"}}
+        </div>
+        <div class="mt-md-4 iconfont iconfont-bg" :class="{selected:module==='me'}" @click="switchModule('me')">
+          {{module==="me"?"&#xea3f;":"&#xea42;"}}
+        </div>
+        <div class="d-none d-md-flex align-items-center justify-content-center flex-column pb-3" >
+          <div class="mt-md-4 iconfont iconfont-bg" @click="saveData('smallWindow' , smallWindow=!smallWindow)">
+            {{smallWindow?"&#xe632;":"&#xe637;"}}
+          </div>
+          <div class="mt-md-4 iconfont iconfont-bg" :class="{selected:module==='setting'}" @click.stop="box.showMore=!box.showMore">
+            {{module==="setting"?"&#xe9f1;":"&#xe9f2;"}}
+          </div>
+        </div>
+      </div>
+
+      <!-- 对话列表 -->
+      <div class="chat-bar" v-show="showAddressBook&&module==='chat'">
+        <div class="p-3 d-flex align-items-center">
+          <input class="form-control form-control-sm bg-light" type="text" v-model="keyword" placeholder="搜索">
+          <button class="btn btn-sm btn-light border ml-2 mr-0 f15 font-weight-bold add-btn" @click.stop="showRoleInfoBox"><span class="iconfont p-0">&#xe6a6;</span></button>
+        </div>
+        <div class="chat-list">
+          <template v-for="item in filter">
+            <div class="item" @click="switchRoleId(item.roleId)" :class="{selected: roleId==item.roleId, 'shadow-selected':contextMenu.roleId==item.roleId}" @contextmenu.prevent="openContextMenu(item.roleId, $event)">
+              <div class="d-flex">
+                <img class="avatar" :src="item.avatar+'?v=3.0'" alt="avatar"/>
+                <div class="ml-2">
+                  <div class="name">{{item.name}}</div>
+                  <div class="desc text-truncate">{{item.desc}}</div>
+                </div>
+              </div>
+              <div class="text-right text-secondary f12">
+                <div style="height:1.3rem">{{formatDate(item.lastTime)}}</div>
+                <div class="iconfont" v-if="item.pinned">&#xe677;</div>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- 聊天框 -->
+      <div class="chat-box" :style="{width:showAddressBook?'calc(100% - 250px)':'100%'}" :class="{'slide-in': isSlidedIn, 'slide-out': isSlidedOut}" v-show="(!isMobile || !showAddressBook) && module==='chat'">
+        <div class="header d-flex justify-content-between" @click="scrollToTop()">
+          <b class="iconfont" @click="slideOut" v-show="isMobile">&#xe6db;</b>
+          <span v-html="chat.name"></span>
+          <b class="iconfont" @click.stop="editRole(roleId)">⋯</b>
+        </div>
+        <div class="body">
+          <ul class="list-unstyled overflow-auto h-100 mb-0 message-list" ref="messageBox">
+            <template v-for="message in chat.messages" :key="message.id">
+              <li class="d-flex mt-4" :class="{'flex-row-reverse':message.role=='user'}">
+                <img class="avatar message-avatar" alt="avatar" :src="message.role!=='user'?chat.avatar:loginUser.avatar" width="40" height="40">
+                <div class="position-relative d-flex align-items-center" @mouseenter="hoverMessageId=message.id" @mouseleave="hoverMessageId=0">
+                  <div v-if="message.type==='midjourney'" class="midjourney mx-2 message-body">
+                    <img class="img-fluid" v-if="message.content" :src="message.content" />
+                    <div class="img-loading" v-else><div class="dot dot1"></div><div class="dot dot2"></div><div class="dot dot3"></div></div>
+                    <div class="image-tools" v-if="message.subtype==='multi' && message.progress==='100%'">
+                      <div>
+                        <button v-for="i in 4"  class="btn px-2 px-md-4 mr-2" :class="{selected:message.buttonBits[i-1]==='1'}" :title="'选择图'+i" @click="imageChange(message, 'UPSCALE', i)">选{{i}}</button>
+                        <button class="btn px-2 px-md-4 icon" :class="{selected:message.buttonBits[8]==='1'}" title="重新生成" @click="imageChange(message, 'REROLL')">&#xe66f;</button>
+                      </div>
+                      <div class="mt-2"><button v-for="i in 4" :title="'变换图'+i" :class="{selected:message.buttonBits[i+3]==='1'}" class="btn btn-dark px-2 px-md-4 mr-2" @click="imageChange(message, 'VARIATION', i)">变{{i}}</button></div>
+                    </div>
+                    <div class="image-tools" v-else-if="message.progress==='100%'">
+                      <div>
+                        <button class="btn px-2 px-md-4 mr-2" :class="{selected:message.buttonBits[0]==='1'}" @click="imageVary(message, {'--iw':0.6}, 1)">强变换</button>
+                        <button class="btn px-2 px-md-4 mr-2" :class="{selected:message.buttonBits[1]==='1'}" @click="imageVary(message, {'--iw':1.2}, 2)">中变换</button>
+                        <button class="btn px-2 px-md-4 mr-2" :class="{selected:message.buttonBits[2]==='1'}" @click="imageVary(message, {'--iw':2}, 3)">微变换</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div v-else class="card mx-2 markdown-body alert message-body"
+                       :class="{'alert-success':message.role==='user'}"
+                       v-html="markdown(message.content)||(!message.completed?'<b class=\'animate-blink\'>|</b>':'')"
+                  >
+                  </div>
+
+                  <div class="p-1 bg-white rounded shadow-sm position-absolute" style="top:-20px;" v-show="hoverMessageId===message.id && message.completed" :style="message.role==='user'?'left:0':'right:0'">
+                    <span class="iconfont p-1 iconfont-bg" v-show="message.role!=='user'&&message.prompt&&chat.model!=='midjourney'&&message===this.lastMessage(chat)" @click="regenerate(chat, message)">&#xe60a;</span>
+                    <span class="iconfont block-copy iconfont-bg" @click="copyToClipboard(message.content)"></span>
+                    <span class="iconfont p-1 iconfont-bg" @click="deleteMessage(message.id)">&#xe680;</span>
+                  </div>
+                </div>
+              </li>
+            </template>
+          </ul>
+          <div class="stop-btn">
+            <button type="button" class="btn btn-sm btn-outline-secondary" v-show="chat.loading" @click="cancel" style="display: none">停止</button>
+          </div>
+        </div>
+        <div class="footer" v-show="chat.name">
+          <div style="border-top:2px solid green" :class="{'fade-out':uploadPercent>=100}" :style="'width:' + uploadPercent+'%'"></div>
+          <div class="tools" @click="scrollToBottom(true)">
+            <span class="iconfont chat-tools-item iconfont-bg" title="通讯录关闭/开启" @click.stop="showAddressBook=!showAddressBook">&#xe84a;</span>
+            <span class="iconfont chat-tools-item iconfont-bg" title="清除消息" @click.stop="destroy">&#xea31;</span>
+            <span class="iconfont chat-tools-item iconfont-bg" title="参数调整" :class="{selected:box.showParams}" @click.stop="showPanel('Params')">&#xea0a;</span>
+            <span class="iconfont chat-tools-item iconfont-bg" v-show="chat.model!=='midjourney'" title="绑定ApiKey" :class="{selected:box.showApiKey,'text-success':api.enable}" @click.stop="showPanel('ApiKey')">&#xe9ed;</span>
+            <span class="iconfont chat-tools-item iconfont-bg" v-show="chat.model==='midjourney'" title="上传图片" @click.stop="openUploadImage">&#xea04;</span>
+            <form style="display: none" ref="uploadForm"><input type="file" ref="uploadInput" @change="uploadImage"></form>
+            <span class="iconfont chat-tools-item float-right f20 d-none d-md-block iconfont-bg" title="发送方式" :class="{selected:box.showSendMethod}" @click.stop="showPanel('SendMethod')">&#xe696;</span>
+          </div>
+          <textarea @drop="handleDrop" @paste="handlePaste" class="input" :rows="!isMobile?6:2" placeholder="说点什么吧..." v-model="chat.content" @keypress="handleEnter" ref="input" @focus="handleInputFocus"></textarea>
+          <div class="send-btn d-flex align-items-center">
+            <a href="https://www.workerman.net/app/view/ai" target="_blank" class="text-secondary" v-show="!isMobile&&showBuyLink">购买此程序</a>
+            <button class="btn btn-sm btn-success px-3 ml-3" :disabled="chat.loading||!chat.content" @click="sendMessage()">发送</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 聊天框里相关浮层 -->
+      <div class="overlay bg-transparent" v-show="showShadowLayer&&module==='chat'" @contextmenu.prevent="hideAll">
+        <!-- 对话列表右键菜单 -->
+        <div class="position-fixed shadow bg-white p-2 rounded cursor-pointer" @click.stop :style="{top:contextMenu.top+'px', left:contextMenu.left+'px'}" v-show="box.showContextMenu">
+            <a class="dropdown-item iconfont" @click="pinRole(contextMenu.roleId)">&#xe677; 置顶</a>
+            <a class="dropdown-item iconfont" @click="editRole(contextMenu.roleId)">&#xe681; 编辑</a>
+            <a class="dropdown-item iconfont" @click="deleteRole(contextMenu.roleId)">&#xe680; 删除</a>
+        </div>
+
+        <!-- 参数设置 -->
+        <div class="params-box border shadow slide-up" @click.stop v-show="box.showParams" :style="{left:showAddressBook?'210px':'0'}">
+          <div class="font-weight-bolder mt-1 mb-3">参数调整</div>
+          <form>
+            <div class="form-group row align-items-center">
+              <label for="Model" class="col-sm-3 col-form-label">模型</label>
+              <div class="col-sm-7">
+                <select class="custom-select custom-select-sm" id="Model" v-model="chat.model">
+                  <option v-for="(name, value) in setting.defaultModels" :value="value">{{name}}</option>
+                </select>
+              </div>
+            </div>
+            <div v-if="chat.model&&chat.model.includes('gpt')">
+              <div class="form-group row align-items-center">
+                <label for="ContextNum" class="col-sm-3 col-form-label">上下文数</label>
+                <div class="col-sm-7">
+                  <input type="range" class="custom-range" min="0" max="50" v-model="chat.contextNum">
+                </div>
+                <div class="col-sm-2">
+                  <input type="text" class="form-control form-control-sm" id="ContextNum" v-model="chat.contextNum">
+                </div>
+              </div>
+              <div class="form-group row align-items-center">
+                <label for="MaxTokens" class="col-sm-3 col-form-label">最大token</label>
+                <div class="col-sm-7">
+                  <input type="range" class="custom-range" min="1" max="4096" v-model="chat.maxTokens">
+                </div>
+                <div class="col-sm-2">
+                  <input type="text" class="form-control form-control-sm" id="MaxTokens" v-model="chat.maxTokens">
+                </div>
+              </div>
+              <div class="form-group row align-items-center">
+              <label for="Temperature" class="col-sm-3 col-form-label">创造性</label>
+              <div class="col-sm-7">
+                <input type="range" class="custom-range" min="0" max="1" step="0.1"  v-model="chat.temperature">
+              </div>
+              <div class="col-sm-2">
+                <input type="text" class="form-control form-control-sm" id="Temperature" v-model="chat.temperature">
+              </div>
+            </div>
+            </div>
+            <div v-else-if="chat.model==='midjourney'">
+              <div class="form-group row align-items-center">
+                <label class="col-sm-3 col-form-label">宽高比</label>
+                <div class="col-sm-3">
+                  <input type="text" class="form-control form-control-sm" v-model="chat.midjourneyWidthRatio">
+                </div>
+                <div class="col-sm-3">
+                  <input type="text" class="form-control form-control-sm"  v-model="chat.midjourneyHeightRatio">
+                </div>
+              </div>
+              <div class="form-group row align-items-center">
+                <label class="col-sm-3 col-form-label">想象力</label>
+                <div class="col-sm-7">
+                  <input type="range" class="custom-range" min="0" max="100" v-model="chat.midjourneyChaos">
+                </div>
+                <div class="col-sm-2">
+                  <input type="text" class="form-control form-control-sm" v-model="chat.midjourneyChaos">
+                </div>
+              </div>
+              <div class="form-group row align-items-center">
+                <label for="Temperature" class="col-sm-3 col-form-label">艺术性</label>
+                <div class="col-sm-7">
+                  <input type="range" class="custom-range" min="0" max="1000" step="1" v-model="chat.midjourneyStylize">
+                </div>
+                <div class="col-sm-2">
+                  <input type="text" class="form-control form-control-sm" v-model="chat.midjourneyStylize">
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- ApiKey设置 -->
+        <div class="api-key-box border shadow slide-up pb-4" @click.stop v-show="box.showApiKey" style="width:400px" :style="{left:showAddressBook?'300px':'30px'}">
+          <div class="font-weight-bolder mt-1 mb-3">使用自己的ApiKey</div>
+          <div class="align-items-center d-flex justify-content-between">
+            <div class="col-form-label flex-shrink-0">ApiKey</div>
+            <input class="form-control form-control-sm mx-3 bg-light" style="width:300px" placeholder="sk-开头" v-model="api.key" @blur="saveData"/>
+          </div>
+          <div class="align-items-center d-flex justify-content-between mt-3">
+            <div class="col-form-label flex-shrink-0">代理</div>
+            <input class="form-control form-control-sm mx-2 bg-light" style="width:300px" placeholder="https://开头的完整地址 (选填)" v-model="api.host" @blur="saveData"/>
+          </div>
+          <div class="custom-control custom-switch d-flex justify-content-center align-items-center mt-3">
+            <input type="checkbox" class="custom-control-input custom-switch-green" id="SwitchApi" v-model="api.enable" @click="saveData">
+            <label class="custom-control-label" for="SwitchApi">启用</label>
+          </div>
+        </div>
+
+        <!-- 发送方式 -->
+        <div class="send-method-box shadow" @click.stop v-show="box.showSendMethod">
+          <a class="dropdown-item iconfont" @click="sendMethodSelect('Enter')" :class="{'alert-success':sendMethod=='Enter', selected:sendMethod=='Enter', 'pl-4': sendMethod!='Enter'}">Enter发送</a>
+          <a class="dropdown-item iconfont" @click="sendMethodSelect('Ctrl-Enter')" :class="{'alert-success':sendMethod=='Ctrl-Enter', selected:sendMethod=='Ctrl-Enter', 'pl-4': sendMethod!='Ctrl-Enter'}">Ctrl+Enter发送</a>
+        </div>
+
+        <!-- 角色设置 -->
+        <div class="center-box border shadow slide-up" @click.stop v-show="box.showRoleInfo">
+          <h4 class="mb-4">角色设置</h4>
+          <form enctype="multipart/form-data" id="avatarForm" class="mb-3">
+            <img :src="roleInfo.avatar" height="64" width="64" class="rounded-pill">
+            <label class="btn btn-success btn-sm uploadBtn font-size-14 ml-4">
+              上传头像
+              <input type="file" name="avatar" id="avatar" class="d-none" accept="image/*" @change="uploadAvatar">
+            </label>
+          </form>
+          <div class="form-group row no-gutters align-items-center">
+            <label for="name" class="col-sm-3 col-form-label">昵称</label>
+            <div class="col-sm-9">
+              <input type="text" class="form-control form-control-sm" id="name" v-model="roleInfo.name">
+            </div>
+          </div>
+          <div class="form-group row no-gutters align-items-center">
+            <label for="desc" class="col-sm-3 col-form-label">简介</label>
+            <div class="col-sm-9">
+              <input type="text" class="form-control form-control-sm" id="desc" v-model="roleInfo.desc">
+            </div>
+          </div>
+          <div class="form-group row no-gutters align-items-center">
+            <label for="greeting" class="col-sm-3 col-form-label">问候语</label>
+            <div class="col-sm-9">
+              <input type="text" class="form-control form-control-sm" id="greeting" v-model="roleInfo.greeting">
+            </div>
+          </div>
+          <div class="form-group row no-gutters align-items-center">
+            <label for="rolePrompt" class="col-sm-3 col-form-label">角色指令</label>
+            <div class="col-sm-9">
+              <textarea class="form-control form-control-sm" rows="3" id="rolePrompt" v-model="roleInfo.rolePrompt"></textarea>
+            </div>
+          </div>
+          <div class="d-flex justify-content-center mt-4">
+            <div>
+              <button type="submit" class="btn btn-secondary" @click="hideAll">取消</button>
+              <button type="submit" class="btn btn-success ml-2" @click="saveRole">保存</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 我 -->
+      <div class="page-box w-100 h-100 bg-light" @click.stop v-if="module==='me'">
+        <div class="header d-flex justify-content-between bg-white">我的信息</div>
+        <div class="w-100 body">
+          <iframe class="iframe" id="me" :src="iframe.user"></iframe>
+        </div>
+      </div>
+
+      <!-- 会员 -->
+      <div class="page-box w-100 h-100" v-if="module==='vip'">
+        <div class="header d-flex justify-content-between">充值会员</div>
+        <div class="w-100 body">
+          <iframe class="iframe" id="vip" :src="iframe.vip"></iframe>
+        </div>
+      </div>
+
+      <!-- 市场 -->
+      <div class="page-box w-100 h-100" v-if="module==='market'">
+        <div class="header d-flex justify-content-between">应用市场</div>
+        <div class="w-100 body">
+          <iframe class="iframe" id="market" :src="iframe.market"></iframe>
+        </div>
+      </div>
+
+      <!-- 关于 -->
+      <div class="border shadow card p-0 overflow-hidden center-div" style="max-width:360px;z-index: 10001" v-show="box.showAiInfo">
+        <img src="https://www.workerman.net/upload/img/20230327/276421479fb9e5.png">
+        <div class="card-body">
+          <h5 class="card-title">Webman AI助手</h5>
+          <p class="card-text">Webman AI助手是一套基于webman开发的多角色ChatGPT聊天程序</p>
+          <p class="card-text text-secondary">版本 <?=config('plugin.ai.app.version')?></p>
+          <a href="https://www.workerman.net/app/view/ai" class="btn btn-success btn-sm" target="_blank">了解更多</a>
+        </div>
+      </div>
+
+      <!-- 系统菜单 -->
+      <div class="more-box shadow border-top" style="z-index:10000" @click.stop v-show="box.showMore" :class="{'slide-up':box.showMore}">
+        <a class="dropdown-item py-2 px-4 cursor-pointer" @click="showPanel('AiInfo')">关于AI</a>
+        <a class="dropdown-item py-2 px-4 cursor-pointer" @click="resetSystem">重置系统</a>
+        <a class="dropdown-item py-2 px-4 cursor-pointer" @click="switchModule('me')" v-show="!loginUser.nickname">登录</a>
+        <a class="dropdown-item py-2 px-4 cursor-pointer" @click="logout" v-show="loginUser.nickname">退出</a>
+      </div>
+
+      <!-- 图片预览 -->
+      <div class="overlay img-preview" style="display:none;position:fixed">
+        <span class="close">&times;</span>
+        <img alt="展示图片">
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.jsVersion = '<?=$js_version?>';
+  </script>
+
+
+  <!-- 在线统计代码 -->
+  <script src="/app/ai/js/push.js"></script>
+
+  <!-- 代码高亮 -->
+  <script src="/app/ai/js/highlight.min.js"></script>
+
+  <!-- markdown -->
+  <script src="/app/ai/js/markdown-it.min.js"></script>
+
+  <!-- vue -->
+  <script type="text/javascript" src="/app/ai/js/vue.global.js"></script>
+  <script type="module" src="/app/ai/js/app.js?v=<?=$js_version?>"></script>
+
+  <!-- 五彩纸屑效果 -->
+  <script src="/app/ai/js/confetti.browser.min.js"></script>
+
+  <!-- 代码高亮 css-->
+  <link rel="stylesheet" href="/app/ai/css/highlight.min.css">
+
+  <!-- markdown css -->
+  <link rel="stylesheet" href="/app/ai/css/github-markdown.min.css?v=3.1">
+
+  <script>
+
+    $(document).click(function () {
+      ai.hideAll();
+    });
+
+
+  /*  var _hmt = _hmt || [];
+    $(function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?609dc2f866ce0133cdf405ea1a45f492";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    });*/
+  </script>
+
+
+</body>
+</html>

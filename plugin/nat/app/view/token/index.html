@@ -1,0 +1,73 @@
+<?=plugin\user\api\Template::header('内网穿透-我的token')?>
+
+<?=plugin\user\api\Template::nav()?>
+
+<div class="container">
+
+    <div class="row">
+
+        <?=plugin\user\api\Template::sidebar()?>
+
+        <div class="col-md-9 col-12 pt-4">
+
+            <div class="mb-4 card bg-white border-0 shadow-sm" style="min-height:80vh">
+                <div class="card-body">
+                    <h5 class="pb-3 border-bottom">我的token</h5>
+                    <div class="my-2 d-inline-block"><?=$token?></div>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+<!-- Modal -->
+<div class="modal fade" id="appAdd" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">添加应用</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form>
+                <div class="modal-body row g-3">
+                    <input required type="text" name="name" placeholder="应用名" class="form-control" />
+                    <input required type="text" name="domain" placeholder="域名" class="form-control" />
+                    <input required type="text" name="local_ip" placeholder="本地ip" class="form-control" />
+                    <input required type="number" name="local_port" placeholder="本地端口" class="form-control" />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    $('#appAdd form').submit(function(event) {
+        event.preventDefault();
+        $.ajax({
+            url: "/app/nat/app/insert",
+            type: 'POST',
+            data: $(this).serialize(),
+            success: function (res) {
+                if (res.code === 0) {
+                    $('#appAdd').modal('hide');
+                    webman.success("操作成功", function () {
+                        location.reload();
+                    })
+                    return;
+                }
+                let field = res.data && res.data.field ? res.data.field : false;
+                field && $('#input[name="'+field+'"]').addClass("is-invalid").focus();
+                webman.error(res.msg);
+            }
+        });
+    });
+</script>
+
+<?=plugin\user\api\Template::footer()?>

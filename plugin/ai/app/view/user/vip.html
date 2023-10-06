@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="zh-cn">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link href="/app/ai/css/bootstrap.min.css" rel="stylesheet">
+    <script src="/app/ai/js/jquery.min.js"></script>
+    <script src="/app/ai/js/bootstrap.bundle.min.js"></script>
+    <title>webman AI助手充值</title>
+</head>
+
+<body class="bg-light ready sticky">
+
+
+<style>
+    @font-face {
+        font-family: 'iconfont';  /* Project id 4079339 */
+        src: url('//at.alicdn.com/t/c/font_4079339_5r9dvf48ry.woff2?t=1695716385595') format('woff2'),
+        url('//at.alicdn.com/t/c/font_4079339_5r9dvf48ry.woff?t=1695716385595') format('woff'),
+        url('//at.alicdn.com/t/c/font_4079339_5r9dvf48ry.ttf?t=1695716385595') format('truetype');
+    }
+
+    .iconfont {
+        font-family: iconfont;
+    }
+
+    .f1 {
+        font-size: 18px;
+    }
+    .f2 {
+        font-size: 30px;
+    }
+    .text-gray {
+        color: #aaa !important;
+    }
+    .plan-box {
+        border-radius:.5rem;
+        border:1px solid #ccc;
+        cursor:pointer;
+    }
+    .plan-selected {
+        border:1px solid #21a821 !important;
+        background-color:#f4fcf6;
+    }
+    .type-selected {
+        border:1px solid #21a821 !important;
+        background-color: #f4fcf6;
+    }
+    .plan-tip {
+        background-color:red;border-top-left-radius:.45rem;border-bottom-right-radius:.45rem;padding:.2rem .35rem;font-size:12px;
+    }
+    [v-cloak] {
+        display: none;
+    }
+    /* 手机适配 */
+    @media (max-width: 768px) {
+        .f1 {
+            font-size: 16px;
+        }
+        .f2 {
+            font-size: 22px;
+        }
+        body {
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+        }
+    }
+</style>
+
+<div class="container">
+
+    <div class="row">
+
+        <div class="col-12 pt-4" id="app">
+
+            <div class="mb-4 card bg-white border-0 shadow-sm" style="min-height:70vh;">
+                <div class="card-body p-lg-5">
+
+                    <h5 class="pb-2">AI助手会员充值</h5>
+
+                    <div class="row" v-cloak>
+                        <div class="col-6 col-sm-6 col-md-4 d-flex" v-for="(item, index) in setting.plans">
+                            <div class="p-0 plan-box mb-5 shadow-sm" :class="{'plan-selected':plan==index}" @click="plan=index">
+                                <div class="d-flex">
+                                    <div class="text-center text-white plan-tip">有效期{{item.months}}个月</div>
+                                </div>
+
+                                <div class="d-flex align-items-center justify-content-center my-2 mx-2 mx-md-3 my-lg-4 mx-lg-4">
+                                    <div class="text-center">
+                                        <div class="f1 d-flex align-items-center">
+                                            <span class="d-flex align-items-baseline"><b>￥</b><b class="f2" v-html="item.price"></b></span>/{{item.name}}
+                                        </div>
+                                        <del class="text-gray">原价 ￥{{item.price*2}}</del>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row" v-cloak>
+                        <div class="col-6 col-md-4 d-flex" v-if="setting.enabledWechat">
+                            <div class="p-0 plan-box mb-5 shadow-sm" :class="{'type-selected':paymentMethod=='wechat'}" @click="paymentMethod='wechat'">
+                                <div class="d-flex align-items-center justify-content-center my-2 mx-3 my-md-3 mx-md-4">
+                                    <div class="text-center">
+                                        <div class="f1 d-flex align-items-center iconfont">
+                                            <span class="f2 mr-2 text-success">&#xe69d;</span> 微信支付
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4 d-flex" v-if="setting.enabledAlipay">
+                            <div class="p-0 plan-box mb-5 shadow-sm" :class="{'type-selected':paymentMethod=='alipay'}" @click="paymentMethod='alipay'">
+                                <div class="d-flex align-items-center justify-content-center  my-2 mx-3 my-md-3 mx-md-4">
+                                    <div class="text-center">
+                                        <div class="f1 d-flex align-items-center iconfont">
+                                            <span class="f2 mr-2 text-primary">&#xe67e;</span>支付宝支付
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-success iconfont" v-for="(item, key) in setting.enabledModelTypes">
+                        &#xe9da; {{item}} {{setting.plans[plan][key]}} 条
+                    </div>
+
+                    <div class="mt-4 float-right">
+                        <input type="hidden" name="plan" v-model="plan">
+                        <input type="hidden" name="redirect">
+                        <button class="btn px-5 btn-success" @click="pay">支付</button>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="modal fade" id="myModal">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+
+                        <!-- Modal 头部 -->
+                        <div class="modal-header">
+                            <h4 class="modal-title">AI会员充值</h4>
+                            <button type="button" class="close" data-dismiss="modal">&times;</button>
+                        </div>
+
+                        <!-- Modal 主体 -->
+                        <div class="modal-body d-flex justify-content-center">
+                            <iframe v-if="!success&&!waitTimeout&&orderId&&paymentMethod=='alipay'" :src="'/app/ai/order/alipay-qr?orderId='+orderId" width="220" height="220" style="border:none;"></iframe>
+                            <iframe v-if="!success&&!waitTimeout&&orderId&&paymentMethod=='wechat'" :src="'/app/ai/order/wechat-qr?orderId='+orderId" width="220" height="220" style="border:none;"></iframe>
+                            <div v-if="waitTimeout||success" class="border bg-light d-flex justify-content-center align-items-center" style="height:200px;width:200px">
+                                <span v-show="waitTimeout" class="text-warning">二维码已过期</span>
+                                <span v-show="success" class="text-success">支付成功</span>
+                            </div>
+                        </div>
+
+                        <!-- Modal 底部 -->
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">取消</button>
+                            <button type="button" class="btn btn-primary btn-sm" data-dismiss="modal">完成</button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+
+<!-- vue -->
+<script type="text/javascript" src="/app/ai/js/vue.global.js"></script>
+
+<script>
+    const App = {
+        data() {
+            return {
+                plan: 1,
+                orderId: '',
+                paymentMethod: "alipay",
+                waitTimeout: false,
+                statusCount: 0,
+                success: false,
+                orderCreateTime: 0,
+                setting: {
+                    dbEnabled: false,
+                    enabledAlipay: false,
+                    enabledWechat: false,
+                    enabledModelTypes: {},
+                    plans: {}
+                }
+            }
+        },
+        mounted() {
+            $('#myModal').on('hide.bs.modal', (e) => {
+                this.done();
+            })
+            this.loadSetting();
+        },
+        methods: {
+            loadSetting() {
+                $.ajax({
+                    url: "/app/ai/setting",
+                    success: (res) => {
+                        if (res.code) {
+                            return alert(res.msg);
+                        }
+                        this.setting = res.data;
+                        this.paymentMethod = this.setting.enabledWechat ? "wechat" : "alipay";
+                    }
+                });
+            },
+            pay() {
+                this.waitTimeout = false;
+                this.success = false;
+                this.clearTimer();
+                $.ajax({
+                    url: "/app/ai/order/create",
+                    data: {plan: this.plan, paymentMethod: this.paymentMethod},
+                    type: "post",
+                    success: (res) => {
+                        if (res.code) {
+                            alert(res.msg);
+                            return;
+                        }
+                        this.orderId = res.data.orderId;
+                        this.orderCreateTime = new Date().getTime();
+                        $('#myModal').modal('show');
+                        this.checkOrderStatus();
+                    }
+                });
+            },
+            checkOrderStatus(once) {
+                $.ajax({
+                    url: "/app/ai/order/status",
+                    data: {orderId: this.orderId},
+                    success: (res) => {
+                        if (res.code) {
+                            return alert(res.msg);
+                        }
+                        if (res.data.status === 'paid') {
+                            this.success = true;
+                            setTimeout(() => {
+                                window.parent.ai.switchModule('me');
+                            }, 2000);
+                            return;
+                        }
+                        if (!once) {
+                            this.timer = setTimeout(()=> {
+                                this.checkOrderStatus();
+                            }, 3000);
+                        }
+                    },
+                    complete: () => {
+                        // 二维码10分钟后过期
+                        if(this.orderCreateTime && new Date().getTime() - this.orderCreateTime > 10*60*1000) {
+                            this.clearTimer();
+                            this.waitTimeout = true;
+                        }
+                    }
+                });
+            },
+            getOrderStatus() {
+                $.ajax({
+                    url: "/app/ai/order/get-status",
+                    data: {orderId: this.orderId},
+                    success: (res) => {
+                        if (res.code) {
+                            return alert(res.msg);
+                        }
+                        if (res.data.status === 'paid') {
+                            this.success = true;
+                            setTimeout(() => {
+                                window.parent.ai.switchModule('me');
+                            }, 1000);
+                        }
+                    }
+                });
+            },
+            clearTimer() {
+                if (this.timer) {
+                    clearTimeout(this.timer);
+                    this.timer = 0;
+                }
+                this.statusCount = 0;
+                this.orderCreateTime = 0;
+            },
+            done() {
+                this.clearTimer();
+                if (!this.orderId) {
+                    return;
+                }
+                this.getOrderStatus();
+            }
+        }
+    }
+    Vue.createApp(App).mount('#app');
+
+    $(document).click(function () {
+        try {window.parent.ai.hideAll();} catch (e) {}
+    });
+</script>
+
+</body>
+</html>

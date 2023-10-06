@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="zh-cn">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link href="/app/ai/css/bootstrap.min.css" rel="stylesheet">
+    <script src="/app/ai/js/jquery.min.js"></script>
+    <script src="/app/ai/js/bootstrap.bundle.min.js"></script>
+    <title>webman AI 我的详情</title>
+</head>
+
+<body class="bg-light ready sticky">
+
+<div class="container">
+
+    <div class="row">
+
+        <div class="col-12 pt-4">
+
+            <div class="mb-4 card bg-white border-0 shadow-sm" style="min-height:80vh">
+                <div class="card-body pb-3">
+                    <div class="d-flex justify-content-center">
+                        <div class="rounded-pill position-relative avatar-box <?=$aiUser['vip']?'vip':''?>">
+                            <img src="<?=htmlspecialchars($user['avatar']??'')?>" height="96" width="96" class="rounded-pill">
+                            <?php if($aiUser['vip']){ ?>
+                            <div class="bg-success text-white px-3 rounded vip-badge">VIP</div>
+                            <?php }?>
+                        </div>
+                    </div>
+                    <table class="table mt-4">
+                        <tbody>
+                        <tr>
+                            <td style="width:170px" class="py-3">昵称</td>
+                            <td class="text-secondary py-3"><?=htmlspecialchars($user['nickname']??'')?></td>
+                        </tr>
+                        <tr>
+                            <td class="py-3">用户名</td>
+                            <td class="text-secondary py-3"><?=htmlspecialchars($user['username']??'')?></td>
+                        </tr>
+                        <?php if($dbEnabled){ ?>
+                        <tr>
+                            <td class="py-3">会员</td>
+                            <td class="text-secondary py-3"><?=$aiUser['vipStr']?></td>
+                        </tr>
+                        <tr>
+                            <td class="py-3">到期时间</td>
+                            <td class="text-secondary py-3"><?=substr($aiUser['expired_at'], 0, 10)?></td>
+                        </tr>
+                        <?php if($gptSetting['enable_gpt3']??false){ ?>
+                        <tr>
+                            <td class="py-3">GPT3.5余量</td>
+                            <td class="text-secondary py-3"><?=$aiUser['available_gpt3']?></td>
+                        </tr>
+                        <?php }?>
+                        <?php if($gptSetting['enable_gpt4']??false){ ?>
+                        <tr>
+                            <td class="py-3">GPT4余量</td>
+                            <td class="text-secondary py-3"><?=$aiUser['available_gpt4']?></td>
+                        </tr>
+                        <?php }?>
+                        <?php if($gptSetting['enable_dalle']??false){ ?>
+                        <tr>
+                            <td class="py-3">Dall.E余量</td>
+                            <td class="text-secondary py-3"><?=$aiUser['available_dalle']?></td>
+                        </tr>
+                        <?php }?>
+                        <?php if($midjourneySetting['enable']??false){ ?>
+                        <tr>
+                            <td class="py-3">Midjourney余量</td>
+                            <td class="text-secondary py-3"><?=$aiUser['available_midjourney']?></td>
+                        </tr>
+                        <?php }?>
+                        <?php } ?>
+                        </tbody>
+                    </table>
+                    <?php if($vipEnabled){ ?>
+                    <div class="btn-list">
+                        <div>
+                        <a class="btn btn-success btn-block" onclick="switchVip()">充值AI会员</a>
+                        <a class="btn btn-danger btn-block" onclick="logout()">退出AI账户</a>
+                        </div>
+                    </div>
+                    <?php } ?>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+<script>
+    function switchVip() {
+        window.parent.ai.switchModule('vip')
+    }
+    function logout() {
+        $.ajax({
+            url: '/app/user/logout',
+            success: () => {
+                window.parent.ai.loadUserInfo();
+                location.reload();
+            }
+        });
+    }
+    $(document).click(function () {
+        try {window.parent.ai.hideAll();} catch (e) {}
+    });
+</script>
+<style>
+    .avatar-box {
+        border:10px solid #ccc;padding:10px;
+    }
+    .avatar-box.vip {
+        border:10px solid #28a745;
+    }
+    .vip-badge {
+        border: 10px solid #fff;position: absolute;bottom:-20px;left: 50%;transform: translateX(-50%);
+    }
+    .btn-list {
+        display: flex;
+        justify-content: center;
+    }
+    .btn-block {
+        display: inline-block;
+        width: initial !important;
+        margin: 0 1rem;
+    }
+    .btn-block+.btn-block {
+        margin-top: 0;
+    }
+    @media (max-width: 768px) {
+        .btn-list {
+            display: block;
+        }
+        .btn-block {
+            display: block;
+            width: 100%;
+        }
+        .btn-block+.btn-block {
+            margin-top: .5rem;
+        }
+        body {
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+        }
+    }
+</style>
+
+</body>
+</html>

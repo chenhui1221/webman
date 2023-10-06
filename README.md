@@ -1,59 +1,20 @@
-<div style="padding:18px;max-width: 1024px;margin:0 auto;background-color:#fff;color:#333">
-<h1>webman</h1>
+  <h1>项目简介</h1>
+    <p>这个项目的目标是打造一个全且高效的开发脚手架。我们的终极标是实现高性能，高扩展性，并以插件形式进行即插即用。无论需要什么功能，只需一键安装即可。如果您不再需要某个功能，也可以轻松卸。例如，如果您需要钱包功能，只需一键安装；如果您需要社区功能，也可以轻松添加。在这个脚手架中，一都是那么简单易用。</p>
 
-基于<a href="https://www.workerman.net" target="__blank">workerman</a>开发的超高性能PHP框架
+    <h2>功能特性</2>
+    <ul>
+        <li><strong>高性能</strong>：我们的手优化了代码结构执行效率，以确保您的应能够快速响应并处理大量请求。</li>
+        <li><strong>高扩展性</strong>：我们的脚手架设计了模块化的架构，您可以根据需要添加或删除功能模块。</li>
+        <li><strong>插件形式即插即用</strong>：所有的功能模块都设计成插件形式，您可以轻松添加或删除，无需修改底层代码。</li>
+    </ul>
 
+    <h2>如何贡献</h2>
+    <p>我们欢迎所有人为我们的项目作出贡献。无论是提出新的法，修复bug，还是添加新的功能，我们都常欢迎。在贡献代码之前，请确保您已经阅读并理解了我们的贡献指南。</p>
 
-<h1>学习</h1>
-
-<ul>
-  <li>
-    <a href="https://www.workerman.net/webman" target="__blank">主页 / Home page</a>
-  </li>
-  <li>
-    <a href="https://www.workerman.net/doc/webman" target="__blank">文档 / Document</a>
-  </li>
-  <li>
-    <a href="https://www.workerman.net/doc/webman/install.html" target="__blank">安装 / Install</a>
-  </li>
-  <li>
-    <a href="https://www.workerman.net/questions" target="__blank">问答 / Questions</a>
-  </li>
-  <li>
-    <a href="https://www.workerman.net/apps" target="__blank">市场 / Apps</a>
-  </li>
-  <li>
-    <a href="https://www.workerman.net/sponsor" target="__blank">赞助 / Sponsors</a>
-  </li>
-  <li>
-    <a href="https://www.workerman.net/doc/webman/thanks.html" target="__blank">致谢 / Thanks</a>
-  </li>
-</ul>
-
-<div style="float:left;padding-bottom:30px;">
-
-  <h1>赞助商</h1>
-
-  <h4>特别赞助</h4>
-  <a href="https://www.crmeb.com/?form=workerman" target="__blank">
-    <img src="https://www.workerman.net/img/sponsors/6429/20230719111500.svg" width="200">
-  </a>
-
-  <h4>铂金赞助</h4>
-  <a href="https://www.fadetask.com/?from=workerman" target="__blank"><img src="https://www.workerman.net/img/sponsors/1/20230719084316.png" width="200"></a>
-  <a href="https://www.yilianyun.net/?from=workerman" target="__blank" style="margin-left:20px;"><img src="https://www.workerman.net/img/sponsors/6218/20230720114049.png" width="200"></a>
-
-  <h4>金牌赞助</h4>
-
-
-</div>
-
-
-<div style="clear: both">
-<h1>LICENSE</h1>
-The webman is open-sourced software licensed under the MIT.
-</div>
-
-</div>
-
-
+    <h2>联系我们</h2>
+    <p>如果您在使用过程中遇到任何问题，或者有任何建议和想法，都可以通过以下方式联系我们：</p>
+    <ul>
+        <li>提交issue</li>
+        <li>送邮件至your-email.com</li>
+    </>
+    <p>我们尽快回复您的问题和建议。</p>

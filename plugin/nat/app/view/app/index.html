@@ -1,0 +1,192 @@
+<?=plugin\user\api\Template::header('内网穿透-我的应用')?>
+
+<?=plugin\user\api\Template::nav()?>
+
+<div class="container">
+
+    <div class="row">
+
+        <?=plugin\user\api\Template::sidebar()?>
+
+        <div class="col-md-9 col-12 pt-4">
+
+            <div class="mb-4 card bg-white border-0 shadow-sm" style="min-height:80vh;">
+                <div class="card-body">
+
+                    <h5 class="pb-2">我的应用</h5>
+                    <table class="table">
+                        <tbody>
+                        <tr>
+                            <td class="py-3">名称</td>
+                            <td class="py-3">域名</td>
+                            <td class="py-3">
+                                本地ip
+                            </td>
+                            <td class="py-3">
+                                本地端口
+                            </td>
+
+                            <td class="py-3">
+                                操作
+                            </td>
+                        </tr>
+
+                        <?php foreach($apps as $app){ ?>
+                        <tr>
+                            <td class="py-2"><?=htmlspecialchars($app['name'])?></td>
+                            <td class="py-2"><a href="//<?=htmlspecialchars($app['domain'])?>" target="_blank"><?=htmlspecialchars($app['domain'])?></a></td>
+                            <td class="py-2">
+                                <?=htmlspecialchars($app['local_ip'])?>
+                            </td>
+                            <td class="py-2">
+                                <?=htmlspecialchars($app['local_port'])?>
+                            </td>
+                            <td class="py-2">
+                                <a href="#"
+                                   data-id="<?=$app['id']?>"
+                                   data-name="<?=htmlspecialchars($app['name'])?>"
+                                   data-domain="<?=htmlspecialchars($app['domain'])?>"
+                                   data-local_ip="<?=htmlspecialchars($app['local_ip'])?>"
+                                   data-local_port="<?=htmlspecialchars($app['local_port'])?>"
+                                   data-toggle="modal" data-target="#appAdd">编辑</a>
+                                <a href="#" data-id="<?=$app['id']?>" data-toggle="modal" data-target="#appDel">删除</a>
+                            </td>
+                        </tr>
+                        <?php }?>
+
+                        </tbody>
+                    </table>
+
+                    <button class="btn btn-primary mb-3" data-toggle="modal" data-target="#appAdd">+ 添加</button>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="appAdd" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">应用设置</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form>
+                <div class="modal-body">
+                    <input type="hidden" name="id">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">应用名</label>
+                        <input required id="name" type="text" name="name" placeholder="应用名" class="form-control" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="domain" class="form-label">域名</label>
+                        <input required id="domain" type="text" name="domain" placeholder="域名" class="form-control" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="name" id="local_ip" class="form-label">本地ip</label>
+                        <input required type="text" name="local_ip" placeholder="本地ip" class="form-control" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="name" id="local_port" class="form-label">本地端口</label>
+                        <input required type="number" name="local_port" placeholder="本地端口" class="form-control" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">关闭</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="appDel" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">删除应用</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form>
+                <div class="modal-body">
+                    <input type="hidden" name="id">
+                    确认删除该应用？
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">确认</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    $('#appAdd form').submit(function(event) {
+        event.preventDefault();
+        let url = $('input[name="id"]').val() ? '/app/nat/app/update' : '/app/nat/app/insert';
+        $.ajax({
+            url: url,
+            type: 'POST',
+            data: $(this).serialize(),
+            success: function (res) {
+                if (res.code === 0) {
+                    $('#appAdd').modal('hide');
+                    webman.success("操作成功", function () {
+                        location.reload();
+                    })
+                    return;
+                }
+                let field = res.data && res.data.field ? res.data.field : false;
+                field && $('input[name="'+field+'"]').addClass("is-invalid").focus();
+                webman.error(res.msg);
+            }
+        });
+    });
+
+    $('#appAdd').on('show.bs.modal', function (event) {
+        let button = $(event.relatedTarget);
+        ['id', 'name', 'domain', 'local_ip', 'local_port'].forEach(function (field) {
+            $('input[name="'+field+'"]').val(button.data(field)).removeClass('is-invalid');
+        });
+    })
+
+    $('#appDel form').submit(function(event) {
+        event.preventDefault();
+        let url = '/app/nat/app/delete';
+        $.ajax({
+            url: url,
+            type: 'POST',
+            data: $(this).serialize(),
+            success: function (res) {
+                if (res.code === 0) {
+                    $('#appDel').modal('hide');
+                    webman.success("操作成功", function () {
+                        location.reload();
+                    })
+                    return;
+                }
+                webman.error(res.msg);
+            }
+        });
+    });
+
+    $('#appDel').on('show.bs.modal', function (event) {
+        var button = $(event.relatedTarget);
+        $('input[name="id"]').val(button.data('id'));
+    })
+
+    // 更新数据移除红框
+    $('input').keyup(function () {
+        $(this).removeClass('is-invalid');
+    });
+</script>
+<?=plugin\user\api\Template::footer()?>
