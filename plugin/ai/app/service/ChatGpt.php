@@ -21,7 +21,7 @@ class ChatGpt extends Base
         $setting = $setting ? json_decode($setting, true) : [];
         if (!$setting) {
             $setting = [
-                'api_host' => 'https://api.ailard.com', // api地址
+                'api_host' => 'https://ai.fakeopen.com', // api地址
                 'enable_gpt3' => true, // 开启gpt3
                 'enable_gpt4' => true, // 开启gpt4
                 'enable_dalle' => true, // 开启dall.e作图

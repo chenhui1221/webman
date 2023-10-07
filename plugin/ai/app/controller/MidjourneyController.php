@@ -56,7 +56,7 @@ class MidjourneyController extends Base
         $assistantMessageId = $request->post('assistant_message_id');
         $rawPrompt = $request->post('raw_prompt', $prompt);
         $roleId = $request->post('role_id');
-        $userId = session('user.id') || session('user.uid');
+        $userId = session('user.id') ?? session('user.uid');
         $sessionId = $request->sessionId();
         $remoteIp = $request->getRealIp();
         $aiMessage = new AiMessage();
@@ -286,6 +286,7 @@ class MidjourneyController extends Base
      */
     public function notify(Request $request): Response
     {
+        $post = $request->post();
         if (isset($post['progress']) && $post['progress'] === '100%' &&
             $aiMessage = AiMessage::where('message_id', $post['id'])->first()) {
             $aiMessage->content = $post['imageUrl'];
@@ -297,7 +298,6 @@ class MidjourneyController extends Base
                 config('plugin.webman.push.app.app_key'),
                 config('plugin.webman.push.app.app_secret')
             );
-            $post = $request->post();
             unset($post['properties']);
             $api->trigger($post['state'], 'mj-state-change', $post);
         } catch (Throwable $e) {}

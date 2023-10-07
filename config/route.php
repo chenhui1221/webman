@@ -13,8 +13,8 @@
  */
 
 use Webman\Route;
-
-
+Route::disableDefaultRoute();
+Route::any('/', [plugin\ai\app\controller\IndexController::class, 'index']);
 
 
 

@@ -103,7 +103,7 @@ class MessageController extends Base
         $userMessageId = $request->post('user_message_id');
         $assistantMessageId = $request->post('assistant_message_id');
         $roleId = $request->post('role_id');
-        $userId = session('user.id') || session('user.uid');
+        $userId = session('user.id') ?? session('user.uid');
         $sessionId = $request->sessionId();
         $remoteIp = $request->getRealIp();
 
@@ -119,9 +119,6 @@ class MessageController extends Base
         $aiMessage->model = $model;
         $aiMessage->save();
 
-        if ($model == 'gpt-4-32k'){
-            $model = 'gpt-4';
-        }
         // 设置API URL和参数
         $data = array(
             'model' => $model,
@@ -130,6 +127,7 @@ class MessageController extends Base
             'stream' => (bool)$request->post("stream"),
             'messages' => $messages
         );
+
         // 向 chatgpt api 发送数据
         [$schema, $host] = explode('://', $chatGptApiHost, 2);
         $con = new AsyncTcpConnection("tcp://$host", ['ssl' => [
@@ -268,7 +266,7 @@ class MessageController extends Base
         $userMessageId = $request->post('user_message_id');
         $assistantMessageId = $request->post('assistant_message_id');
         $roleId = $request->post('role_id');
-        $userId = session('user.id') || session('user.uid');
+        $userId = session('user.id') ?? session('user.uid');
         $sessionId = $request->sessionId();
         $remoteIp = $request->getRealIp();
         $aiMessage = new AiMessage();
@@ -322,18 +320,27 @@ class MessageController extends Base
                 if (!$position = strpos($header, "\r\n\r\n")) {
                     return;
                 }
-                $headerCompleted = true;
+                $bodyLength = 0;
+                if (preg_match("/Content-Length: (\d+)\r\n/i", $header, $match)) {
+                    $bodyLength = $match[1];
+                }
                 if(!$buffer = substr($header, $position + 4)) {
                     return;
                 }
+                $headerCompleted = true;
+                if ($bodyLength) {
+                    $con->buffer .= $buffer;
+                    $connection->send(new Chunk($buffer));
+                    $connection->send(new Chunk(''));
+                    // 记录无法使用的key
+                    if (!$keyBelongsUser) {
+                        $this->checkApiKeyAvailable($apiKey, $buffer, $request);
+                    }
+                    return;
+                }
             }
-            $con->buffer = $buffer;
-            $connection->send(new Chunk($buffer));
-            $connection->send(new Chunk(''));
-            // 记录无法使用的key
-            if (!$keyBelongsUser) {
-                $this->checkApiKeyAvailable($apiKey, $buffer, $request);
-            }
+            $con->buffer .= $buffer;
+            $connection->send($buffer, true);
         };
         $con->onClose = function ($con) use ($assistantMessageId, $userId, $sessionId, $roleId, $remoteIp) {
             if ($con->buffer) {

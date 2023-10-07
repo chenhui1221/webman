@@ -55,9 +55,9 @@ class Base
         // 赠送余额不足则给出提示
         } catch (Throwable $e) {
             if ($isVip) {
-                return  "您的账户{$modelType}额度不足，如需继续使用请 [续费](/app/ai/user/vip?redirect=".urlencode('/app/ai').") ";
+                return  "您的账户{$modelType}额度不足，联系管理员开通";
             }
-            return "您今天{$modelType}消息已经达到上限，如需继续使用请 [升级会员](/app/ai/user/vip?redirect=".urlencode('/app/ai').") ";
+            return "您今天{$modelType}消息已经达到上限，如需继续使用请 联系管理员";
         }
 
         return null;

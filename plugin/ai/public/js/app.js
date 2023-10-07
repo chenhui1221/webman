@@ -697,10 +697,10 @@ win.ai = createApp({
             return context;
         },
         listenCopyCodes() {
-            $(document).on("click", ".hljs .block-copy",  () => {
-                this.copyToClipboard($(this).parent().next().text());
+            $(document).on("click", ".hljs .block-copy",  (event) => {
+                this.copyToClipboard($(event.target).parent().next().text());
             });
-        },
+	    },
         copyToClipboard(content) {
             copyToClipboard(content);
         },

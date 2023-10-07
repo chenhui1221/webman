@@ -46,7 +46,7 @@
                         </tr>
                         <tr>
                             <td class="py-3">到期时间</td>
-                            <td class="text-secondary py-3"><?=substr($aiUser['expired_at'], 0, 10)?></td>
+                            <td class="text-secondary py-3"><?=substr($aiUser['expired_at']?:'', 0, 10)?></td>
                         </tr>
                         <?php if($gptSetting['enable_gpt3']??false){ ?>
                         <tr>
