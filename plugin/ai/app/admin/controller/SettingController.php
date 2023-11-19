@@ -3,14 +3,17 @@
 namespace plugin\ai\app\admin\controller;
 
 use plugin\admin\app\controller\Base;
-use plugin\admin\app\model\Option;
 use plugin\ai\app\service\Category;
 use plugin\ai\app\service\ChatGpt;
+use plugin\ai\app\service\Ernie;
 use plugin\ai\app\service\Model;
 use plugin\ai\app\service\Plan;
+use plugin\ai\app\service\Qwen;
 use plugin\ai\app\service\SensitiveWord;
 use plugin\ai\app\service\Setting;
 use plugin\ai\app\service\Midjourney;
+use plugin\ai\app\service\Spark;
+use plugin\ai\app\service\Chatglm;
 use support\Request;
 use support\Response;
 use Throwable;
@@ -42,6 +45,10 @@ class SettingController extends Base
         return json(['code' => 0, 'msg' => 'ok', 'data' => [
             'setting' => Setting::getSetting(),
             'chatgpt' => ChatGpt::getSetting(),
+            'ernie' => Ernie::getSetting(),
+            'qwen' => Qwen::getSetting(),
+            'spark' => Spark::getSetting(),
+            'chatglm' => Chatglm::getSetting(),
             'midjourney' => Midjourney::getSetting(),
             'category' => Category::getSetting(),
             'plan' => json_encode(Plan::getSetting(), JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT),

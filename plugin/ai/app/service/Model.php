@@ -29,8 +29,13 @@ class Model extends Base
                 'gpt-3.5-turbo-16k' => 'gpt-3.5-turbo-16k',
                 'gpt-4' => 'gpt-4',
                 'gpt-4-32k' => 'gpt-4-32k',
-                'dall.e' => 'DALL.E作图',
-                'midjourney' => 'Midjourney作图',
+                "qwen-plus" => "通义千问",
+                "ernie-bot-turbo" => "文心一言",
+                "ernie-bot-4" => "文心一言4.0",
+                "spark" => "讯飞星火",
+                "chatglm" => "清华智普",
+                "midjourney" => "Midjourney作图",
+                "dall.e" => "DALL.E作图",
             ];
             static::saveSetting($items);
         }

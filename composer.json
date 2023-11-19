@@ -23,6 +23,12 @@
     "wiki": "https://workerman.net/doc/webman",
     "source": "https://github.com/walkor/webman"
   },
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "https://github.com/chenhui1221/tron-api.git"
+    }
+  ],
   "require": {
     "php": ">=7.2",
     "workerman/webman-framework": "^1.5.0",
@@ -51,7 +57,10 @@
     "zjkal/time-helper": "^1.1",
     "webman/think-orm": "^1.1",
     "webman/log": "^1.1.6",
-    "webman/nat-client": "^1.0"
+    "webman/nat-client": "^1.0",
+    "iexbase/tron-api": "v2.x-dev",
+    "shopwwi/laravel-cache": "^1.0",
+    "illuminate/cache": "^8.0"
   },
   "suggest": {
     "ext-event": "For better performance. "

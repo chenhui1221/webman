@@ -56,6 +56,21 @@ export function fireConfetti() {
     }
 }
 
+export function speak(content) {
+    const synthesis = window.speechSynthesis;
+    if (synthesis.speaking) {
+        synthesis.cancel();
+        if (content && content === synthesis.content) {
+            return;
+        }
+    }
+    synthesis.content = content;
+    let message = new SpeechSynthesisUtterance();
+    message.rate = 1.5;
+    message.text = content;
+    synthesis.speak(message);
+}
+
 export function copyToClipboard(content) {
     if (navigator.clipboard) {
         return navigator.clipboard.writeText(content);
@@ -87,3 +102,103 @@ export function xhrOnProgress(fun) {
 export function hasChinese(content) {
     return /[\u4E00-\u9FA5]/.test(content);
 }
+
+
+// 打开或创建IndexedDB数据库
+function openIndexedDB() {
+    return new Promise((resolve, reject) => {
+        if (openIndexedDB.instance) {
+            resolve(openIndexedDB.instance);
+        }
+        const request = indexedDB.open('ai-history', 1);
+        request.onupgradeneeded = function(event) {
+            // 创建对象存储空间
+            const db = event.target.result;
+            const chatHistoryStore = db.createObjectStore('history', { keyPath: 'chatId' });
+            chatHistoryStore.createIndex("roleIdIndex", "roleId");
+        };
+        request.onsuccess = function(event) {
+            openIndexedDB.instance = event.target.result;
+            resolve(openIndexedDB.instance);
+        };
+        request.onerror = function(event) {
+            reject('无法打开/创建IndexedDB数据库');
+        };
+    });
+}
+
+// 保存历史记录，每个角色保留100个历史对话
+export async function historySave(roleId, chatId, title, time, messages) {
+    try {
+        const items = await historyList(roleId);
+        const limit = 100;
+        if (items.length >= limit) {
+            await historyDelete(roleId, items[items.length - 1].chatId);
+        }
+        messages = JSON.parse(JSON.stringify(messages));
+        const db = await openIndexedDB();
+        const transaction = db.transaction(['history'], 'readwrite');
+        const objectStore = transaction.objectStore('history');
+        objectStore.put({ roleId, chatId, title, time, messages});
+    } catch (error) {
+        console.error('保存历史记录出错：', error);
+    }
+}
+
+// 获取历史记录列表
+export async function historyList(roleId) {
+    const db = await openIndexedDB();
+    const transaction = db.transaction(['history'], 'readonly');
+    const objectStore = transaction.objectStore('history');
+    const request = objectStore.getAll();
+    return new Promise((resolve, reject) => {
+        request.onsuccess = function(event) {
+            resolve(event.target.result.filter(item => item.roleId === roleId).reverse());
+        };
+        request.onerror = function(event) {
+            reject('获取历史记录列表出错');
+        };
+    });
+}
+
+// 获取历史记录
+export async function historyGet(roleId, chatId) {
+    try {
+        const db = await openIndexedDB();
+        const transaction = db.transaction(['history'], 'readonly');
+        const objectStore = transaction.objectStore('history');
+        const request = objectStore.get(chatId);
+        return new Promise((resolve, reject) => {
+            request.onsuccess = function(event) {
+                const item = event.target.result;
+                if (item && item.roleId === roleId) {
+                    resolve(item);
+                } else {
+                    reject('历史记录不存在或不属于指定角色');
+                }
+            };
+            request.onerror = function(event) {
+                reject('获取历史记录出错');
+            };
+        });
+    } catch (error) {
+        console.error('获取历史记录出错：', error);
+        return null;
+    }
+}
+
+// 删除历史记录
+export async function historyDelete(roleId, chatId) {
+    try {
+        const db = await openIndexedDB();
+        const transaction = db.transaction(['history'], 'readwrite');
+        const objectStore = transaction.objectStore('history');
+        const request = objectStore.delete(chatId);
+        request.onsuccess = function() {
+            console.log('已删除历史记录');
+        };
+    } catch (error) {
+        console.error('删除历史记录出错：', error);
+    }
+}
+

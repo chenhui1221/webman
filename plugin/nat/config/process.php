@@ -2,7 +2,7 @@
 
 use plugin\nat\app\process\Server;
 
-return [
+/*return [
     'server' => [
         'handler' => Server::class,
         'listen' => 'http://0.0.0.0:8001',
@@ -12,4 +12,5 @@ return [
             'debug' => false
         ]
     ]
-];
+];*/
+return [];

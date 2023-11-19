@@ -127,7 +127,7 @@
 
                                 $("select[name='type']").html(selectOption)
                             } else if (obj[0].nodeName.toLowerCase() === "textarea") {
-                                obj.val(layui.util.escape(value));
+                                obj.val(value);
                             } else if (obj[0].localName === 'input' && obj[0].type === 'checkbox') {
                                 if (value === 1) {
                                     $(obj[0]).attr('checked', 'checked');

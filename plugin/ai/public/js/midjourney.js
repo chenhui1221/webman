@@ -7,7 +7,7 @@ const {reactive} = Vue;
 const $ = window.$;
 
 // 获取midjourney参数
-export function getParams(chat, prompt) {
+function getParams(chat, prompt) {
     let params = "";
     if (!prompt.includes("--ar") && chat.midjourneyWidthRatio !== chat.midjourneyHeightRatio) {
         params = " --ar " + (chat.midjourneyWidthRatio + ":" + chat.midjourneyHeightRatio);
@@ -36,6 +36,7 @@ function sendMessage(ai, chat, content, lastMessage) {
     data["assistant_message_id"] = lastMessage.id;
     data["role_id"] = chat.roleId;
     data["raw_prompt"] = lastMessage.rawPrompt;
+    data['chat_id'] = chat.id;
     data = JSON.stringify(data);
     $.ajax({
         url: "/app/ai/midjourney/imagine",
@@ -45,11 +46,11 @@ function sendMessage(ai, chat, content, lastMessage) {
         headers: {"Content-Type": "application/json"},
         complete: () => {
             chat.loading = false;
-            lastMessage.completed = true;
             ai.saveData();
         },
         success: (res) => {
-            lastMessage.id = lastMessage.taskId = res.result;
+            lastMessage.taskId = res.result;
+            lastMessage.id = res.result || lastMessage.id;
             if (res.error && res.error.message) {
                 lastMessage.type = "text";
                 lastMessage.content = res.error.message;
@@ -62,9 +63,9 @@ function sendMessage(ai, chat, content, lastMessage) {
 }
 
 // 作图
-export function imagine(ai, chat, content) {
+export function mjImagine(ai, chat, content) {
     // 产生一条作图消息
-    const lastMessage = reactive({
+    let lastMessage = reactive({
         "id": ai.genId(),
         "type": "midjourney",
         "subtype": "multi",
@@ -84,25 +85,23 @@ export function imagine(ai, chat, content) {
     // 有中文则先翻译再发请求
     ai.translate({
         content: content,
-        success: (res) => {
-            if (res.error && res.error.message) {
+        complete: (text, error) => {
+            chat.loading = false;
+            lastMessage.completed = true;
+            if (error) {
                 lastMessage.type = "text";
-                lastMessage.content = "中文翻译成英文时出现错误: " + res.error.message;
+                lastMessage.content = "中文翻译成英文时出现错误: " + error;
                 ai.saveData();
                 return;
             }
-            lastMessage.prompt = res.choices[0].message.content.replace("-- ", "--");
+            lastMessage.prompt = text;
             sendMessage(ai, chat, lastMessage.prompt, lastMessage);
-        },
-        complete: () => {
-            chat.loading = false;
-            lastMessage.completed = true;
         }
     });
 }
 
 // 选择或变换
-export function imageChange(ai, message, action, index) {
+export function mjImageChange(ai, message, action, index) {
     const chat = ai.chat;
     const lastMessage = reactive({
         "id": ai.genId(),
@@ -130,7 +129,6 @@ export function imageChange(ai, message, action, index) {
         dataType: "json",
         complete: () => {
             chat.loading = false;
-            lastMessage.completed = true;
             ai.saveData();
         },
         success: (res) => {
@@ -147,7 +145,7 @@ export function imageChange(ai, message, action, index) {
 }
 
 // 垫图变换
-export function imageVary(ai, message, options, index) {
+export function mjImageVary(ai, message, options, index) {
     const chat = ai.chat;
     const lastMessage = reactive({
         "id": ai.genId(),
@@ -177,7 +175,6 @@ export function imageVary(ai, message, options, index) {
         dataType: "json",
         complete: () => {
             chat.loading = false;
-            lastMessage.completed = true;
             ai.saveData();
         },
         success: function (res) {
@@ -195,7 +192,7 @@ export function imageVary(ai, message, options, index) {
 
 
 // 将作图状态保存到消息中
-export function saveStatus(message, data) {
+export function mjSaveStatus(message, data) {
     message.progress = data.progress;
     message.content = data.imageUrl;
     if (data.failReason) {
@@ -213,7 +210,7 @@ function check(ai, message) {
         dataType: "json",
         success: function (res) {
             if (!res.code) {
-                saveStatus(message, res);
+                mjSaveStatus(message, res);
                 ai.saveData();
             }
         }
@@ -221,7 +218,7 @@ function check(ai, message) {
 }
 
 // 检查对话中所有作图任务状态
-export function checkStatus(ai, chat) {
+export function mjCheckStatus(ai, chat) {
     for (const message of chat.messages || []) {
         if (message.type === "midjourney" && message.progress !== "100%" && message.taskId) {
             check(ai, message);

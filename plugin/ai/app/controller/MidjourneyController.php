@@ -37,7 +37,7 @@ class MidjourneyController extends Base
      */
     public function imagine(Request $request): ?Response
     {
-        if ($error = static::tryReduceBalance('midjourney')) {
+        if ($error = static::tryReduceBalance('midjourney', $isVip)) {
             return json(['error' => ['message' => $error]]);
         }
         $messages = $request->post('messages');
@@ -52,16 +52,23 @@ class MidjourneyController extends Base
             return json(['error' => ['message' => '出于政策隐私和安全的考虑，我们无法提供相关信息']]);
         }
 
+        $prompt = preg_replace(['/-- /', '/(--[a-z]+)\./', '/--fast/', '/--relax/'], ['--', '$1', '', ''], $prompt);
+        if (!$isVip && Midjourney::getSetting('non_vip_use_relax')) {
+            $prompt .= ' --relax';
+        }
+
         $userMessageId = $request->post('user_message_id');
         $assistantMessageId = $request->post('assistant_message_id');
         $rawPrompt = $request->post('raw_prompt', $prompt);
         $roleId = $request->post('role_id');
         $userId = session('user.id') ?? session('user.uid');
         $sessionId = $request->sessionId();
+        $chatId = $request->post('chat_id');
         $remoteIp = $request->getRealIp();
         $aiMessage = new AiMessage();
         $aiMessage->user_id = $userId;
         $aiMessage->session_id = $sessionId;
+        $aiMessage->chat_id = $chatId;
         $aiMessage->message_id = $userMessageId;
         $aiMessage->role_id = $roleId;
         $aiMessage->role = 'user';
@@ -176,7 +183,7 @@ class MidjourneyController extends Base
         }
 
         // 选择图片UPSCALE不消耗余额，REROLL消耗余额
-        if (strtoupper($action) === 'REROLL' && $error = static::tryReduceBalance('midjourney')) {
+        if (strtoupper($action) === 'REROLL' && $error = static::tryReduceBalance('midjourney', $isVip)) {
             return json(['error' => ['message' => $error]]);
         }
 

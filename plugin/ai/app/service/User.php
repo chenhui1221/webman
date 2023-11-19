@@ -16,10 +16,9 @@ class User
      * @return bool
      * @throws BusinessException
      */
-    public static function reduceBalance($userId, $model)
+    public static function reduceBalance($userId, $modelType)
     {
         static::checkNewUser($userId);
-        $modelType = Common::getModelType($model);
         $field = "available_$modelType";
         $affectedRows  = AiUser::where('user_id', $userId)
             ->where($field, '>=', 1)
@@ -36,10 +35,27 @@ class User
      * @param $aiUser
      * @return bool
      */
-    public static function isVip($userId, $aiUser = null)
+    public static function isVip($userId, &$expired = false)
     {
-        $aiUser = $aiUser ?? AiUser::where('user_id', $userId)->first();
-        return $aiUser && $aiUser->expired_at && strtotime($aiUser->expired_at) > time();
+        $expired = false;
+        $aiUser = AiUser::where('user_id', $userId)->first();
+        if (!$aiUser || !$aiUser->expired_at) {
+            return false;
+        }
+        $expired = strtotime($aiUser->expired_at) < time();
+	$needUpdate = false;
+	if ($expired) {
+            foreach ($aiUser->toArray() as $key => $value) {
+                if (strpos($key, 'available_') === 0 && $value > 0) {
+                    $needUpdate = true;
+                    $aiUser->$key = 0;
+                }
+            }
+        }
+        if ($needUpdate) {
+            $aiUser->save();
+        }
+        return !$expired;
     }
 
     /**
@@ -62,6 +78,10 @@ class User
         $aiUser->available_gpt4 = $chatGptSetting['gpt4_reg_free_count'];
         $aiUser->available_dalle = $chatGptSetting['dalle_reg_free_count'];
         $aiUser->available_midjourney = $midjourneySetting['reg_free_count'];
+        $aiUser->available_ernie = Ernie::getSetting('reg_free_count');
+        $aiUser->available_qwen = Qwen::getSetting('reg_free_count');
+        $aiUser->available_spark = Spark::getSetting('reg_free_count');
+        $aiUser->available_chatglm = Chatglm::getSetting('reg_free_count');
         $aiUser->save();
     }
 }

@@ -19,9 +19,9 @@ input, textarea {
 
 @font-face {
     font-family: 'iconfont';  /* Project id 4079339 */
-    src: url('//at.alicdn.com/t/c/font_4079339_5r9dvf48ry.woff2?t=1695716385595') format('woff2'),
-    url('//at.alicdn.com/t/c/font_4079339_5r9dvf48ry.woff?t=1695716385595') format('woff'),
-    url('//at.alicdn.com/t/c/font_4079339_5r9dvf48ry.ttf?t=1695716385595') format('truetype');
+    src: url('//at.alicdn.com/t/c/font_4079339_pr4y80hy6t.woff2?t=1697078820099') format('woff2'),
+    url('//at.alicdn.com/t/c/font_4079339_pr4y80hy6t.woff?t=1697078820099') format('woff'),
+    url('//at.alicdn.com/t/c/font_4079339_pr4y80hy6t.ttf?t=1697078820099') format('truetype');
 }
 
 .icon {
@@ -133,6 +133,25 @@ input, textarea {
     height: 40px;
 }
 
+.send-btn {
+    position: absolute;
+    right: .5rem;
+    bottom: .5rem;
+    margin: 0;
+}
+
+.icp {
+    position: absolute;
+    left: .8rem;
+    bottom: .5rem;
+    margin: 0;
+    font-size: 12px;
+}
+
+a.icp {
+    color: #ccc !important;
+    text-decoration: none;
+}
 
 .add-btn {
     height: 1.95rem !important;
@@ -195,10 +214,13 @@ input, textarea {
     border: 1px solid #eee;
 }
 
-.send-btn {
+.right-box {
     position: absolute;
-    right: 1rem;
-    bottom: 1rem;
+    width: 375px;
+    max-width:85%;
+    right: 0;
+    top: 0;
+    bottom: 0
 }
 
 .send-method-box {
@@ -321,6 +343,7 @@ input, textarea {
     height: 200px;
     border-top: 1px solid #ddd;
     overflow: hidden;
+    position: relative;
 }
 
 .chat-box .footer .tools {
@@ -350,6 +373,10 @@ input, textarea {
     font-size: 0.8rem;
 }
 
+.f13 {
+    font-size: 0.9rem;
+}
+
 .f15 {
     font-size: 1rem;
 }
@@ -360,6 +387,10 @@ input, textarea {
 
 .cursor-pointer {
     cursor: pointer;
+}
+
+.cursor-default {
+    cursor: default;
 }
 
 .avatar {

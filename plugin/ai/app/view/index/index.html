@@ -91,16 +91,16 @@
                     <div class="img-loading" v-else><div class="dot dot1"></div><div class="dot dot2"></div><div class="dot dot3"></div></div>
                     <div class="image-tools" v-if="message.subtype==='multi' && message.progress==='100%'">
                       <div>
-                        <button v-for="i in 4"  class="btn px-2 px-md-4 mr-2" :class="{selected:message.buttonBits[i-1]==='1'}" :title="'选择图'+i" @click="imageChange(message, 'UPSCALE', i)">选{{i}}</button>
-                        <button class="btn px-2 px-md-4 icon" :class="{selected:message.buttonBits[8]==='1'}" title="重新生成" @click="imageChange(message, 'REROLL')">&#xe66f;</button>
+                        <button v-for="i in 4"  class="btn px-2 px-md-4 mr-2" :class="{selected:message.buttonBits[i-1]==='1'}" :title="'选择图'+i" @click="mjImageChange(message, 'UPSCALE', i)">选{{i}}</button>
+                        <button class="btn px-2 px-md-4 icon" :class="{selected:message.buttonBits[8]==='1'}" title="重新生成" @click="mjImageChange(message, 'REROLL')">&#xe66f;</button>
                       </div>
-                      <div class="mt-2"><button v-for="i in 4" :title="'变换图'+i" :class="{selected:message.buttonBits[i+3]==='1'}" class="btn btn-dark px-2 px-md-4 mr-2" @click="imageChange(message, 'VARIATION', i)">变{{i}}</button></div>
+                      <div class="mt-2"><button v-for="i in 4" :title="'变换图'+i" :class="{selected:message.buttonBits[i+3]==='1'}" class="btn btn-dark px-2 px-md-4 mr-2" @click="mjImageChange(message, 'VARIATION', i)">变{{i}}</button></div>
                     </div>
                     <div class="image-tools" v-else-if="message.progress==='100%'">
                       <div>
-                        <button class="btn px-2 px-md-4 mr-2" :class="{selected:message.buttonBits[0]==='1'}" @click="imageVary(message, {'--iw':0.6}, 1)">强变换</button>
-                        <button class="btn px-2 px-md-4 mr-2" :class="{selected:message.buttonBits[1]==='1'}" @click="imageVary(message, {'--iw':1.2}, 2)">中变换</button>
-                        <button class="btn px-2 px-md-4 mr-2" :class="{selected:message.buttonBits[2]==='1'}" @click="imageVary(message, {'--iw':2}, 3)">微变换</button>
+                        <button class="btn px-2 px-md-4 mr-2" :class="{selected:message.buttonBits[0]==='1'}" @click="mjImageVary(message, {'--iw':0.6}, 1)">强变换</button>
+                        <button class="btn px-2 px-md-4 mr-2" :class="{selected:message.buttonBits[1]==='1'}" @click="mjImageVary(message, {'--iw':1.2}, 2)">中变换</button>
+                        <button class="btn px-2 px-md-4 mr-2" :class="{selected:message.buttonBits[2]==='1'}" @click="mjImageVary(message, {'--iw':2}, 3)">微变换</button>
                       </div>
                     </div>
                   </div>
@@ -113,6 +113,7 @@
                   <div class="p-1 bg-white rounded shadow-sm position-absolute" style="top:-20px;" v-show="hoverMessageId===message.id && message.completed" :style="message.role==='user'?'left:0':'right:0'">
                     <span class="iconfont p-1 iconfont-bg" v-show="message.role!=='user'&&message.prompt&&chat.model!=='midjourney'&&message===this.lastMessage(chat)" @click="regenerate(chat, message)">&#xe60a;</span>
                     <span class="iconfont block-copy iconfont-bg" @click="copyToClipboard(message.content)"></span>
+                    <span class="iconfont p-1 iconfont-bg" v-if="supportSpeak" @click="speak(message.content)">&#xea43;</span>
                     <span class="iconfont p-1 iconfont-bg" @click="deleteMessage(message.id)">&#xe680;</span>
                   </div>
                 </div>
@@ -127,18 +128,17 @@
           <div style="border-top:2px solid green" :class="{'fade-out':uploadPercent>=100}" :style="'width:' + uploadPercent+'%'"></div>
           <div class="tools" @click="scrollToBottom(true)">
             <span class="iconfont chat-tools-item iconfont-bg" title="通讯录关闭/开启" @click.stop="showAddressBook=!showAddressBook">&#xe84a;</span>
-            <span class="iconfont chat-tools-item iconfont-bg" title="清除消息" @click.stop="destroy">&#xea31;</span>
+            <span class="iconfont chat-tools-item iconfont-bg" title="历史话题" @click.stop="showHistory(chat.roleId)">&#xe9ee;</span>
+            <span class="iconfont chat-tools-item iconfont-bg" title="新话题" @click.stop="newChat">&#xea31;</span>
             <span class="iconfont chat-tools-item iconfont-bg" title="参数调整" :class="{selected:box.showParams}" @click.stop="showPanel('Params')">&#xea0a;</span>
-            <span class="iconfont chat-tools-item iconfont-bg" v-show="chat.model!=='midjourney'" title="绑定ApiKey" :class="{selected:box.showApiKey,'text-success':api.enable}" @click.stop="showPanel('ApiKey')">&#xe9ed;</span>
+            <span class="iconfont chat-tools-item iconfont-bg" v-show="/gpt/.test(chat.model)" title="绑定ApiKey" :class="{selected:box.showApiKey,'text-success':api.enable}" @click.stop="showPanel('ApiKey')">&#xe9ed;</span>
             <span class="iconfont chat-tools-item iconfont-bg" v-show="chat.model==='midjourney'" title="上传图片" @click.stop="openUploadImage">&#xea04;</span>
             <form style="display: none" ref="uploadForm"><input type="file" ref="uploadInput" @change="uploadImage"></form>
             <span class="iconfont chat-tools-item float-right f20 d-none d-md-block iconfont-bg" title="发送方式" :class="{selected:box.showSendMethod}" @click.stop="showPanel('SendMethod')">&#xe696;</span>
           </div>
-          <textarea @drop="handleDrop" @paste="handlePaste" class="input" :rows="!isMobile?6:2" placeholder="说点什么吧..." v-model="chat.content" @keypress="handleEnter" ref="input" @focus="handleInputFocus"></textarea>
-          <div class="send-btn d-flex align-items-center">
-            <a href="https://www.workerman.net/app/view/ai" target="_blank" class="text-secondary" v-show="!isMobile&&showBuyLink">购买此程序</a>
-            <button class="btn btn-sm btn-success px-3 ml-3" :disabled="chat.loading||!chat.content" @click="sendMessage()">发送</button>
-          </div>
+          <textarea @drop="handleDrop" @paste="handlePaste" class="input" :rows="!isMobile?5:2" placeholder="说点什么吧..." v-model="chat.content" @keypress="handleEnter" ref="input" @focus="handleInputFocus"></textarea>
+          <a class="icp" v-if="!isMobile && setting.icp" target="_blank" href="http://beian.miit.gov.cn/">{{setting.icp}}</a>
+          <button class="btn btn-sm btn-success px-3 ml-3 send-btn" :disabled="chat.loading||!chat.content" @click="sendMessage()">发送</button>
         </div>
       </div>
 
@@ -152,7 +152,7 @@
         </div>
 
         <!-- 参数设置 -->
-        <div class="params-box border shadow slide-up" @click.stop v-show="box.showParams" :style="{left:showAddressBook?'210px':'0'}">
+        <div class="params-box border shadow slide-up" @click.stop v-show="box.showParams" :style="{left:showAddressBook?'300px':'0'}">
           <div class="font-weight-bolder mt-1 mb-3">参数调整</div>
           <form>
             <div class="form-group row align-items-center">
@@ -163,11 +163,11 @@
                 </select>
               </div>
             </div>
-            <div v-if="chat.model&&chat.model.includes('gpt')">
+            <div v-if="chat.model&&/(gpt|qwen|ernie|spark|chatglm)/.test(chat.model)">
               <div class="form-group row align-items-center">
                 <label for="ContextNum" class="col-sm-3 col-form-label">上下文数</label>
                 <div class="col-sm-7">
-                  <input type="range" class="custom-range" min="0" max="50" v-model="chat.contextNum">
+                  <input type="range" class="custom-range" min="0" max="32" v-model="chat.contextNum">
                 </div>
                 <div class="col-sm-2">
                   <input type="text" class="form-control form-control-sm" id="ContextNum" v-model="chat.contextNum">
@@ -225,7 +225,7 @@
         </div>
 
         <!-- ApiKey设置 -->
-        <div class="api-key-box border shadow slide-up pb-4" @click.stop v-show="box.showApiKey" style="width:400px" :style="{left:showAddressBook?'300px':'30px'}">
+        <div class="api-key-box border shadow slide-up pb-4" @click.stop v-show="box.showApiKey" style="width:400px" :style="{left:showAddressBook?'390px':'30px'}">
           <div class="font-weight-bolder mt-1 mb-3">使用自己的ApiKey</div>
           <div class="align-items-center d-flex justify-content-between">
             <div class="col-form-label flex-shrink-0">ApiKey</div>
@@ -245,6 +245,24 @@
         <div class="send-method-box shadow" @click.stop v-show="box.showSendMethod">
           <a class="dropdown-item iconfont" @click="sendMethodSelect('Enter')" :class="{'alert-success':sendMethod=='Enter', selected:sendMethod=='Enter', 'pl-4': sendMethod!='Enter'}">Enter发送</a>
           <a class="dropdown-item iconfont" @click="sendMethodSelect('Ctrl-Enter')" :class="{'alert-success':sendMethod=='Ctrl-Enter', selected:sendMethod=='Ctrl-Enter', 'pl-4': sendMethod!='Ctrl-Enter'}">Ctrl+Enter发送</a>
+        </div>
+
+        <!-- 历史对话 -->
+        <div class="right-box shadow h-100 bg-white p-4 chat-list" v-show="box.showHistory" @click.stop :class="{'slide-in' : isMobile||!smallWindow}">
+          <input class="form-control form-control-sm bg-light" type="text" v-model="historyKeyword" placeholder="搜索">
+
+          <div v-if="!Object.keys(historyItems).length" class="d-flex flex-column align-items-center justify-content-center">
+            <div class="iconfont text-secondary mt-5 cursor-default" style="font-size:60px;">&#xe9e4;</div>
+            <div class="text-secondary mt-2">没有相关记录</div>
+          </div>
+          <div v-else class="mt-3 py-1 px-1 px-md-3 item rounded align-items-center cursor-pointer" v-for="item in historyItems" @click="historyGet(chat.roleId, item.chatId)">
+            <div>
+              <div class="text-truncate"><b>{{item.title}}</b></div>
+              <div class="text-secondary f12 mt-1">{{formatDate(item.time)}}</div>
+            </div>
+            <div class="iconfont iconfont-bg p-1 f18 bg-white" @click.stop="deleteHistory(chat.roleId, item.chatId)">&#xe680;</div>
+          </div>
+
         </div>
 
         <!-- 角色设置 -->
@@ -284,7 +302,7 @@
           <div class="d-flex justify-content-center mt-4">
             <div>
               <button type="submit" class="btn btn-secondary" @click="hideAll">取消</button>
-              <button type="submit" class="btn btn-success ml-2" @click="saveRole">保存</button>
+              <button type="submit" class="btn btn-success ml-2" @click="saveRole()">保存</button>
             </div>
           </div>
         </div>

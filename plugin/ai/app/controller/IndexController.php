@@ -23,6 +23,9 @@ class IndexController
      */
     public function index(Request $request): Response
     {
+        if ($request->host() === 'www.workerman.net' && !session('user')) {
+            return redirect('/user/login?redirect=/ai');
+        }
         return view('index/index', [
             'js_version' => filemtime(base_path('plugin/ai/public/js/app.js')),
             'css_version' => filemtime(base_path('plugin/ai/public/css/app.css'))

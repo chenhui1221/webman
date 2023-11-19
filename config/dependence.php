@@ -11,5 +11,12 @@
  * @link      http://www.workerman.net/
  * @license   http://www.opensource.org/licenses/mit-license.php MIT License
  */
-
-return [];
+use \Psr\Container\ContainerInterface;
+return [
+    \support\Request::class => function () {
+        return request();
+    },
+    'json' => function ($container) {
+        return $container->make(\support\Json::class);
+    }
+];

@@ -13,7 +13,6 @@
 
 <body class="bg-light ready sticky">
 
-
 <style>
     @font-face {
         font-family: 'iconfont';  /* Project id 4079339 */
@@ -61,10 +60,6 @@
         }
         .f2 {
             font-size: 22px;
-        }
-        body {
-            padding-left: env(safe-area-inset-left);
-            padding-right: env(safe-area-inset-right);
         }
     }
 </style>
@@ -124,8 +119,10 @@
                         </div>
                     </div>
 
-                    <div class="alert alert-success iconfont" v-for="(item, key) in setting.enabledModelTypes">
-                        &#xe9da; {{item}} {{setting.plans[plan][key]}} 条
+                    <div v-for="(item, key) in setting.enabledModelTypes">
+                        <div class="alert alert-success iconfont" v-if="setting.plans[plan][key]">
+                            &#xe9da; {{item}} {{setting.plans[plan][key]}} 条
+                        </div>
                     </div>
 
                     <div class="mt-4 float-right">

@@ -4,10 +4,14 @@ namespace plugin\ai\app\controller;
 
 use plugin\ai\app\service\Category;
 use plugin\ai\app\service\ChatGpt;
+use plugin\ai\app\service\Ernie;
 use plugin\ai\app\service\Midjourney;
 use plugin\ai\app\service\Model;
 use plugin\ai\app\service\Plan;
+use plugin\ai\app\service\Qwen;
 use plugin\ai\app\service\Setting;
+use plugin\ai\app\service\Spark;
+use plugin\ai\app\service\Chatglm;
 use support\Request;
 use support\Response;
 
@@ -34,7 +38,7 @@ class SettingController extends Base
             unset($models['midjourney']);
         }
         $enabledModelTypes = [];
-        if ($gptSetting['enable_gpt3']) {
+        if ($gptSetting['enable_gpt3']??false) {
             $enabledModelTypes['gpt3'] = 'gpt3.5对话';
         }
         if ($gptSetting['enable_gpt4']??false) {
@@ -46,13 +50,27 @@ class SettingController extends Base
         if ($midjourneySetting['enable']??false) {
             $enabledModelTypes['midjourney'] = 'Midjourney作图';
         }
+        if (Ernie::getSetting('enable')) {
+            $enabledModelTypes['ernie'] = '文心一言';
+        }
+        if (Qwen::getSetting('enable')) {
+            $enabledModelTypes['qwen'] = '通义千问';
+        }
+        if (Spark::getSetting('enable')) {
+            $enabledModelTypes['spark'] = '讯飞星火';
+        }
+        if (Chatglm::getSetting('enable')) {
+            $enabledModelTypes['chatglm'] = '清华智普';
+        }
 
+        $setting = Setting::getSetting();
         return $this->json(0, 'ok', [
             'defaultModels' => $models,
             'dbEnabled' => static::dbEnabled(),
             'enabledAlipay' => static::alipayEnabled(),
             'enabledWechat' => static::wechatEnabled(),
-            'enablePayment' => Setting::getSetting('enable_payment'),
+            'enablePayment' => $setting['enable_payment']??false,
+            'icp' => $setting['icp']??'',
             'enabledModelTypes' => $enabledModelTypes,
             'plans' => static::dbEnabled() ? Plan::getSetting() : []
         ]);

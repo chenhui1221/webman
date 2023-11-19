@@ -17,6 +17,9 @@ use plugin\admin\app\model\User;
  * @property integer $available_gpt3 对话数
  * @property integer $available_gpt4 对话数
  * @property integer $available_dalle 对话数
+ * @property integer $available_ernie 对话数
+ * @property integer $available_qwen 对话数
+ * @property integer $available_spark 对话数
  * @property integer $available_midjourney 对话数
  */
 class AiUser extends Base

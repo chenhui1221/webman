@@ -19,13 +19,17 @@ class SensitiveWord extends Base
     {
         $sensitiveWords = SensitiveWord::getSetting();
         $words = $sensitiveWords ? explode("\n", $sensitiveWords) : [];
+        $userinfo = '';
+        if ($request = request()) {
+            $userinfo = 'uid:' . (session('user.id') ?? session('user.uid')) . ' sid:' . $request->sessionId() . "\n";
+        }
         foreach ($words as $word) {
             $word = trim($word);
             if (!$word) continue;
             // 英文单词不做正则匹配
-            if (preg_match('/^[a-zA-Z ]+$/', $word)) {
+            if (preg_match('/^[a-zA-Z ]+$/', $word, $match)) {
                 if (strpos($content, $word) !== false) {
-                    file_put_contents(runtime_path('logs/unsafe-content.'  . date('Y-m-d') . '.log'), date('Y-m-d H:i:s') . " " . $word . " " . $match[0] . "\n" . $content . "\n", FILE_APPEND);
+                    file_put_contents(runtime_path('logs/unsafe-content.'  . date('Y-m-d') . '.log'), date('Y-m-d H:i:s') . " $userinfo" . $word . " " . $match[0] . "\n" . $content . "\n", FILE_APPEND);
                     return false;
                 }
                 continue;
@@ -37,7 +41,7 @@ class SensitiveWord extends Base
             }
             $preg = '/' . implode(".?", $matches[0]) . '/i';
             if (preg_match($preg, $content, $match)) {
-                file_put_contents(runtime_path('logs/unsafe-content.'  . date('Y-m-d') . '.log'), date('Y-m-d H:i:s') . " " . $word . " " . $match[0] . "\n" . $content . "\n", FILE_APPEND);
+                file_put_contents(runtime_path('logs/unsafe-content.'  . date('Y-m-d') . '.log'), date('Y-m-d H:i:s') . " $userinfo" . $word . " " . $match[0] . "\n" . $content . "\n", FILE_APPEND);
                 return false;
             }
         }

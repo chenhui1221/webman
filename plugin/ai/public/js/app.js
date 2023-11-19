@@ -1,10 +1,12 @@
 "use strict";
 const {createApp, reactive} = Vue;
-import {fireConfetti, formatDate, xhrOnProgress, copyToClipboard,} from "./util.js?v=3.2.0";
-import {imageChange, imageVary, imagine, checkStatus, saveStatus} from "./midjourney.js?v=3.2.2";
+import {fireConfetti, formatDate, xhrOnProgress, copyToClipboard, historySave, historyList, historyGet, historyDelete, speak} from "./util.js?v=3.4.1";
+import {mjImageChange, mjImageVary, mjImagine, mjCheckStatus, mjSaveStatus} from "./midjourney.js?v=3.4.4";
+import handlers from "./model.handlers.js?v=3.4.0";
+
 const win = window;
-const {$, Push, TextEncoder, hljs, markdownit, userAvatar, addEventListener, location, setInterval, setTimeout, XMLHttpRequest,
-    localStorage, alert, console, FormData, document, navigator, PointerEvent, scrollTo} = win;
+const {$, Push, hljs, markdownit, addEventListener, location, setInterval, setTimeout, XMLHttpRequest,
+    localStorage, alert, FormData, document, navigator, PointerEvent, scrollTo} = win;
 
 win.ai = createApp({
     beforeMount() {
@@ -35,9 +37,9 @@ win.ai = createApp({
                 showSendMethod: false,
                 showRoleInfo: false,
                 showMore: false,
-                showAiInfo: false
+                showAiInfo: false,
+                showHistory: false,
             },
-            showBuyLink: false,
             api: {
               key: "",
               host: "",
@@ -54,7 +56,7 @@ win.ai = createApp({
                 model: "gpt-3.5-turbo-0613",
                 maxTokens: 2000,
                 temperature: 0.5,
-                contextNum: 6,
+                contextNum: 5,
             },
             roleInfo: {
                 roleId: 0,
@@ -68,13 +70,15 @@ win.ai = createApp({
                 model: "gpt-3.5-turbo-0613",
                 maxTokens: 2000,
                 temperature: 0.5,
-                contextNum: 6
+                contextNum: 5
             },
             contextMenu: {
                 top: 0,
                 left: 0,
                 roleId: 0,
             },
+            history: [],
+            historyKeyword: "",
             sendMethod: "Enter", // Ctrl-Enter
             hoverMessageId: 0,
             isSlidedIn: false,
@@ -82,6 +86,7 @@ win.ai = createApp({
             isCompiled: true,
             showLoading: false,
             uploadPercent: 0,
+            supportSpeak: false,
             iframe: {
                 user: "/app/ai/user",
                 vip: "/app/ai/user/vip",
@@ -100,12 +105,11 @@ win.ai = createApp({
             this.listen();
         });
         this.listenLink();
-        this.showBuyLink = location.host === "www.workerman.net";
-
         setInterval(() => {
-            checkStatus(this, this.chat);
+            mjCheckStatus(this, this.chat);
         }, 3000);
-        checkStatus(this, this.chat);
+        mjCheckStatus(this, this.chat);
+        this.supportSpeak = 'speechSynthesis' in win;
     },
     watch: {
         "chat.model": function () {
@@ -118,7 +122,7 @@ win.ai = createApp({
         },
         filter() {
             return [...this.roleList.filter((item) => {
-                return !item.deleted && item.name.indexOf(this.keyword) !== -1;
+                return !item.deleted && item.name && item.name.indexOf(this.keyword) !== -1;
             })].sort((a, b) => {
                 if (a.pinned !== b.pinned) {
                     return b.pinned - a.pinned;
@@ -127,6 +131,11 @@ win.ai = createApp({
                     return b.lastTime - a.lastTime;
                 }
                 return b.installed - a.installed;
+            });
+        },
+        historyItems() {
+            return this.history.filter(item => {
+                return item.messages.filter(message => !this.historyKeyword || message.content.indexOf(this.historyKeyword) !== -1).length;
             });
         },
         showShadowLayer() {
@@ -210,7 +219,7 @@ win.ai = createApp({
                 for (let chat of this.roleList) {
                     for (let message of chat.messages) {
                         if (message.taskId === data.id) {
-                            saveStatus(message, data);
+                            mjSaveStatus(message, data);
                             return this.saveData();
                         }
                     }
@@ -243,7 +252,7 @@ win.ai = createApp({
             this.roleId = roleId;
             this.saveData();
             this.scrollToBottom(true, false);
-            checkStatus(this, this.chat);
+            mjCheckStatus(this, this.chat);
             if (this.isMobile) {
                 this.showAddressBook = false;
                 this.isSlidedOut = false;
@@ -252,100 +261,94 @@ win.ai = createApp({
         },
         regenerate(chat, message) {
             chat.messages = chat.messages.filter(item => item.id !== message.id);
-            this.sendMessage(message.prompt, true);
+            if (chat.messages[chat.messages.length - 1]['content'] === message.prompt) {
+                chat.messages.splice(-1, 1);
+            }
+            this.sendMessage(message.prompt);
         },
-        sendMessage(content, withoutMessage) {
+        sendMessage(content) {
             const chat = this.chat;
-            let model = chat.model || this.defaultParams.model;
             content = content || chat.content;
             if (content === "" || chat.loading) {
                 return;
+            }
+            if (!chat.id) {
+                chat.id = new Date().getTime();
+                chat.title = content.substring(0, 15);
+                chat.time = new Date().getTime();
             }
             chat.content = "";
             this.scrollToBottom(true);
             const context = this.getContext();
             const userMessageId = this.genId();
-            if (!withoutMessage) {
-                chat.messages.push({
-                    "id": userMessageId,
-                    "type": "text",
-                    "role": "user",
-                    "created": new Date().getTime(),
-                    "completed": true,
-                    "content": content
-                });
-            }
+            chat.messages.push({
+                "id": userMessageId,
+                "type": "text",
+                "role": "user",
+                "created": new Date().getTime(),
+                "completed": true,
+                "content": content
+            });
             let assistantMessageId = this.genId();
             if (chat.model === "midjourney") {
-                return imagine(this, chat, content);
+                return mjImagine(this, chat, content);
             }
             const lastMessage = reactive({
                 "id": assistantMessageId,
-                "type": model,
+                "type": chat.model,
                 "subtype": "",
                 "role": "assistant",
                 "created": new Date().getTime(),
                 "completed": false,
                 "prompt": content,
-                "content": this.chat.model === "dall.e" ? "生成中..." : ""
+                "content": chat.model === "dall.e" ? "生成中..." : ""
             });
             chat.messages.push(lastMessage);
-            // 每个对话只保留最近40条数据
-            chat.messages = chat.messages.slice(-40);
+            // 每个对话只保留最近100条数据
+            chat.messages = chat.messages.slice(-100);
             chat.lastTime = new Date().getTime();
             this.saveData();
-            chat.lastChunkIndex = 0;
             chat.loading = true;
             this.scrollToBottom(true);
-            let host = "/app/ai/message/send";
+            let url = "/app/ai/message/send";
             const headers = {"Content-Type": "application/json"};
-            if (this.api.enable) {
+            if (/gpt/.test(chat.model) && this.api.enable) {
                 if (this.api.host) {
-                    host = this.api.host;
+                    url = this.api.host;
                 }
                 if (this.api.key) {
                     headers.Authorization = "Bearer " + this.api.key;
                 }
             }
-            let maxTokens = chat.maxTokens || this.defaultParams.maxTokens;
-            if (["gpt-3.5-turbo","gpt-3.5-turbo-0613", "gpt-4"].includes(model) &&
-                this.getBytesLength(content) + this.getBytesLength(JSON.stringify(context)) > this.getModelMaxLength(model)) {
-                model = model === "gpt-4" ? "gpt-4-32k" : "gpt-3.5-turbo-16k";
-            }
-            let messages = [];
-            let length = 0;
+
             if (this.chat.rolePrompt) {
-                messages.push({"role": "system", "content": this.chat.rolePrompt});
-                length += this.getBytesLength(this.chat.rolePrompt);
+                context.unshift({"role": "system", "content": this.chat.rolePrompt});
             }
-            length += this.getBytesLength(content);
-            const maxTokenLength = this.getModelMaxLength(model);
-            maxTokens = Math.ceil(Math.min(maxTokens, (maxTokenLength - length) / 1.5 - 10));
-            const availableLength = maxTokenLength - maxTokens * 1.5;
-            let tmp = [];
-            for (let item of context.reverse()) {
-                length += this.getBytesLength(item.content);
-                if (length >= availableLength) {
-                    break;
-                }
-                tmp.unshift(item);
+            context.push({"role": "user", "content": content});
+
+            const modelType = this.getModelType(chat.model);
+            const handler = handlers[modelType];
+            if (!handler) {
+                lastMessage.content = "未找到模型类型" + modelType;
+                lastMessage.completed = true;
+                chat.loading = false;
+                return;
             }
-            messages = messages.concat(tmp);
-            messages.push({"role": "user", "content": content});
-            const useUserDefinedHost = this.api.enable && this.api.host === "";
+            const {model, messages} = handler.prepare(chat.model, context);
+            const useUserDefinedHost = this.api.enable && this.api.host;
             let data = {
-                "max_tokens": maxTokens,
                 "temperature": chat.temperature || this.defaultParams.temperature,
                 "stream": true,
                 "messages": messages,
                 "model": model,
+                "chat_id": useUserDefinedHost ? undefined : chat.id,
                 "user_message_id": useUserDefinedHost ? undefined : userMessageId,
                 "assistant_message_id": useUserDefinedHost ? undefined : assistantMessageId,
                 "role_id": useUserDefinedHost ? undefined : chat.roleId,
             };
             data = JSON.stringify(data);
             $.ajax({
-                url: host,
+                url: url,
                 data: data,
                 type: "POST",
                 dataType: "json",
@@ -355,72 +358,46 @@ win.ai = createApp({
                     if (!chat.loading || message.id !== assistantMessageId) {
                         return;
                     }
-                    chat.lastChunkIndex = 0;
+                    lastMessage.lastChunkIndex = 0;
                     chat.loading = false;
                     lastMessage.completed = true;
                     this.saveData();
                 },
-                success:  (res) => {
+                success: (res) => {
                     let message = this.lastMessage(chat);
                     if (!chat.loading || message.id !== assistantMessageId) {
                         return;
                     }
-                    if (res.error && res.error.message) {
-                        lastMessage.type = "text";
-                        lastMessage.content = res.error.message;
-                        const keywords = ["exceeded", "deactivated", "not active"];
-                        for (const keyword of keywords) {
-                            if (!userAvatar && res.error.message.includes(keyword)) {
-                                lastMessage.content = "官方apikey余额不足，如有需要请 [购买此程序](https://www.workerman.net/app/view/ai) 自行部署使用。\n同时欢迎 [捐赠](/donate) 以便官方购买更多的apikey持续提供免费服务";
-                            }
-                        }
-                    } else if (res.data && res.data[0] && res.data[0].url) {
-                        lastMessage.content = `![](${res.data[0].url})`;
-                    } else {
-                        console.log(res);
-                    }
+                    handler.success(res, message);
                 },
                 xhr: xhrOnProgress((event) => {
                     let message = this.lastMessage(chat);
-                    // 已经取消
                     if (!chat.loading || message.id !== assistantMessageId) {
                         return;
                     }
                     const xhr = event.target;
                     const {responseText} = xhr;
-                    let thunks = responseText.substring(chat.lastChunkIndex);
-                    chat.lastChunkIndex = responseText.length;
-                    const arr = thunks.split("\n");
-                    arr.forEach((chunk) => {
-                        if (chunk === "") {
-                            return;
-                        }
-                        chunk = chunk.substring(6).trim();
-                        if (chunk === "" || chunk === "[DONE]") {
-                            return;
-                        }
-                        try {
-                            const data = JSON.parse(chunk);
-                            if (message.error) {
-                                message.content += message.error.message || "";
-                            } else {
-                                message.content += data.choices[0].delta.content || "";
-                            }
-                            this.scrollToBottom();
-                        } catch (e) {}
-                    });
+                    handler.progress(message, responseText);
+                    this.scrollToBottom();
                 })
             });
         },
+        getModelType(model) {
+            for (let modelType in handlers) {
+                if ((handlers[modelType]['models']||[]).includes(model)) {
+                    return modelType;
+                }
+            }
+            return model.split('-')[0];
+        },
         translate(options) {
-            const {content, success, complete} = options;
+            const {content, complete} = options;
             let data = JSON.stringify({
                 "max_tokens": 500,
-                "temperature": 0,
+                "temperature": 0.1,
                 "messages": [
                     {"role": "user", "content": content}
-                ],
-                "model": "gpt-3.5-turbo",
+                ]
             });
             $.ajax({
                 url: "/app/ai/message/translate",
@@ -429,22 +406,34 @@ win.ai = createApp({
                 dataType: "json",
                 headers: {"Content-Type": "application/json"},
                 complete: (xhr, status) => {
-                    complete(xhr, status);
-                },
-                success: (res) => {
-                    success(res);
-                },
+                    if (status !== "success") {
+                        return complete("", status);
+                    }
+                    const res = JSON.parse(xhr.responseText);
+                    if (res.error && res.error.message) { // error
+                        return complete("", res.error.message);
+                    }
+                    if (res.choices && res.choices[0] && res.choices[0].message && res.choices[0].message.content) { // gpt
+                        return complete(res.choices[0].message.content);
+                    }
+                    if (res.output && res.output.text) { // qwen-plus
+                        return complete(res.output.text);
+                    }
+                    if (res.result) { //ernie-bot-turbo
+                        return complete(res.result);
+                    }
+                }
             });
         },
         deleteMessage(id) {
             this.chat.messages = this.chat.messages.filter(message => message.id !== id);
             this.saveData();
         },
-        imageVary(message, action, index) {
-            imageVary(this, message, action, index);
+        mjImageVary(message, action, index) {
+            mjImageVary(this, message, action, index);
         },
-        imageChange(message, options, index) {
-            imageChange(this, message, options, index);
+        mjImageChange(message, options, index) {
+            mjImageChange(this, message, options, index);
         },
         handleDrop(event) {
             const files = event.dataTransfer.files;
@@ -498,12 +487,12 @@ win.ai = createApp({
             });
         },
         openUploadImage() {
-            this.$refs.uploadInput.click();
+            this.$refs["uploadInput"].click();
         },
         uploadImage(event) {
             const file = event.target.files[0];
             this.doUploadImage(file);
-            this.$refs.uploadForm.reset();
+            this.$refs["uploadForm"].reset();
         },
         openContextMenu(roleId, event) {
             this.contextMenu.roleId = roleId;
@@ -537,18 +526,20 @@ win.ai = createApp({
                     }
                 }
                 chat.content = chat.content || "";
-                chat.loading = false;
-                chat.lastChunkIndex = 0;
+                chat.loading = chat.loading || false;
                 chat.lastTime = chat.lastTime || 0;
                 chat.pinned = chat.pinned || 0;
                 if (chat.model === "midjourney" && !chat.midjourneyHeightRatio) {
-                    chat.midjourneyWidthRatio = chat.midjourneyHeightRatio = 1;
-                    chat.midjourneyChaos = 0;
-                    chat.midjourneyStylize = 100;
+                    chat.midjourneyWidthRatio = chat.midjourneyWidthRatio || 1;
+                    chat.midjourneyHeightRatio = chat.midjourneyHeightRatio || 1;
+                    chat.midjourneyChaos = chat.midjourneyChaos || 0;
+                    chat.midjourneyStylize = chat.midjourneyStylize || 100;
                 }
                 for (const message of chat.messages) {
-                    message.completed = true;
-                    message.buttonBits = message.buttonBits || "0000000000000000";
+                    message.completed = message.completed || true;
+                    if (chat.model === "midjourney") {
+                        message.buttonBits = message.buttonBits || "0000000000000000";
+                    }
                 }
             }
         },
@@ -619,7 +610,7 @@ win.ai = createApp({
         saveRole(roleInfo) {
             this.hideAll();
             const time = new Date().getTime();
-            roleInfo = roleInfo instanceof PointerEvent ? this.roleInfo : roleInfo;
+            roleInfo = roleInfo || this.roleInfo;
             roleInfo.roleId = roleInfo.roleId || time;
             roleInfo.pinned = 0;
             roleInfo.deleted = false;
@@ -669,11 +660,39 @@ win.ai = createApp({
             }
             this.saveData();
         },
-        destroy() {
+        async newChat() {
             this.cancel();
+            const chat = this.chat;
+            if (chat.id) {
+                await historySave(chat.roleId, chat.id, chat.title, chat.time, chat.messages);
+            }
             this.chat.messages = [];
             this.formatRoles();
             fireConfetti();
+            this.chat.id = 0;
+            this.saveData();
+        },
+        async showHistory(roleId) {
+            this.box.showHistory = !this.box.showHistory;
+            if (!this.box.showHistory) {
+                return;
+            }
+            this.history = await historyList(roleId);
+        },
+        async deleteHistory(roleId, chatId) {
+            await historyDelete(roleId, chatId);
+            this.history = await historyList(roleId);
+        },
+        async historyGet(roleId, chatId) {
+            const chat = this.chat;
+            if (chat.id) {
+                await historySave(chat.roleId, chat.id, chat.title, chat.time, chat.messages);
+            }
+            const {title, messages} = await historyGet(roleId, chatId);
+            chat.title = title;
+            chat.messages = messages;
+            chat.id = chatId;
+            this.hideAll();
             this.saveData();
         },
         lastMessage(chat) {
@@ -688,7 +707,7 @@ win.ai = createApp({
         },
         getContext() {
             let context = [];
-            let contextNum = parseInt(this.chat.contextNum || this.defaultParams.contextNum);
+            let contextNum = parseInt(this.chat.contextNum || this.defaultParams.contextNum) * 2;
             if (contextNum !== 0) {
                 this.chat.messages.slice(-contextNum).forEach(function (message) {
                     context.push({role: message.role, content: message.content || ""});
@@ -700,7 +719,7 @@ win.ai = createApp({
             $(document).on("click", ".hljs .block-copy",  (event) => {
                 this.copyToClipboard($(event.target).parent().next().text());
             });
-	    },
+        },
         copyToClipboard(content) {
             copyToClipboard(content);
         },
@@ -742,7 +761,7 @@ win.ai = createApp({
             }
         },
         scrollToBottom(force, smooth) {
-            const messageBox = this.$refs.messageBox;
+            const messageBox = this.$refs["messageBox"];
             const behavior = smooth !== false ? "smooth" : "auto";
             if (force || messageBox.scrollHeight - messageBox.clientHeight <= messageBox.scrollTop + 100) {
                 this.$nextTick(() => {
@@ -752,7 +771,7 @@ win.ai = createApp({
         },
         scrollToTop(smooth) {
             const behavior = smooth !== false ? "smooth" : "auto";
-            this.$refs.messageBox.scrollTo({top: 0, behavior: behavior});
+            this.$refs["messageBox"].scrollTo({top: 0, behavior: behavior});
         },
         genId() {
             return new Date().getTime() + String(Math.floor(Math.random() * 1000));
@@ -815,18 +834,6 @@ win.ai = createApp({
                 link.attr("target", "_blank");
             });
         },
-        getBytesLength(text) {
-            this.encoder = this.encoder || new TextEncoder();
-            return this.encoder.encode(text).length;
-        },
-        getModelMaxLength(model) {
-            const base = 6000;
-            const match = model.match(/-(\d+)k$/);
-            if (!match) {
-                return base;
-            }
-            return parseInt(match[1]) * base / 4;
-        },
         logout() {
             $.ajax({
                 url: '/app/user/logout',
@@ -839,6 +846,9 @@ win.ai = createApp({
                 }
             });
             this.hideAll();
+        },
+        speak(content) {
+            speak(content);
         }
     }
 }).mount("#app");

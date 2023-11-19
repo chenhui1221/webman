@@ -357,6 +357,9 @@ class OrderController extends Base
         $user->expired_at = date("Y-m-d H:i:s", $expirationTimestamp);
         $user->available_gpt3 =  ($hasExpired ? 0 : $user->available_gpt3) + ($plans[$plan]['gpt3'] ?? 0);
         $user->available_gpt4 = ($hasExpired ? 0: $user->available_gpt4) + ($plans[$plan]['gpt4'] ?? 0);
+        $user->available_ernie =  ($hasExpired ? 0 : $user->available_ernie) + ($plans[$plan]['ernie'] ?? 0);
+        $user->available_qwen = ($hasExpired ? 0: $user->available_qwen) + ($plans[$plan]['qwen'] ?? 0);
+        $user->available_spark = ($hasExpired ? 0: $user->available_spark) + ($plans[$plan]['spark'] ?? 0);
         $user->available_midjourney = ($hasExpired ? 0 : $user->available_midjourney) + ($plans[$plan]['midjourney'] ?? 0);
         $user->save();
     }

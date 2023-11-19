@@ -14,6 +14,7 @@
 
 use Webman\Route;
 Route::disableDefaultRoute();
+//Route::disableDefaultRoute('wallet');
 Route::any('/', [plugin\ai\app\controller\IndexController::class, 'index']);
 
 

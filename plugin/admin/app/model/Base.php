@@ -2,11 +2,12 @@
 
 namespace plugin\admin\app\model;
 
+use charles\basic\BaseModel;
 use DateTimeInterface;
 use support\Model;
 
 
-class Base extends Model
+class Base extends BaseModel
 {
     /**
      * @var string

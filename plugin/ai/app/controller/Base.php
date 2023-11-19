@@ -6,6 +6,7 @@ use plugin\ai\api\Install;
 use plugin\ai\app\model\AiUser;
 use plugin\ai\app\service\ChatGpt;
 use plugin\ai\app\service\Common;
+use plugin\ai\app\service\Setting;
 use plugin\ai\app\service\User;
 use plugin\user\api\Limit;
 use support\Db;
@@ -18,28 +19,44 @@ class Base
 
     /**
      * 尝试减少余额
-     * @param $model
+     * @param $modelType
+     * @param $isVip
      * @return string|null
      * @throws BusinessException
      */
-    public static function tryReduceBalance($model)
+    public static function tryReduceBalance($modelType, &$isVip)
     {
-        $session = request()->session();
-        $loginUser = $session->get('user');
-        $loginUserId = $loginUser['uid'] ?? $loginUser['id'] ?? null;
-        $isVip = $loginUserId && User::isVip($loginUserId);
-        $modelType = Common::getModelType($model);
-        if (!Common::modelEnabled($model)) {
+        if (!Common::modelEnabled($modelType)) {
             return "系统未开启 $modelType 功能";
         }
+        $request = request();
+        $session = $request->session();
+        $loginUser = $session->get('user');
+        $loginUserId = $loginUser['uid'] ?? $loginUser['id'] ?? null;
+        $expired = false;
+        $isVip = $loginUserId && User::isVip($loginUserId, $expired);
+        if ($expired) {
+            return "会员已经过期，[请续费](/app/ai/user/vip)";
+        }
+
+        if (!$loginUserId && Setting::getSetting('need_login')) {
+            return "[请登录](/app/ai/user/login)";
+        }
         // 尝试从余额中扣除
-        if ($loginUserId && User::reduceBalance($loginUserId, $model)) {
+        if ($loginUserId && User::reduceBalance($loginUserId, $modelType)) {
+            return null;
+        }
+
+        if ($isVip && $modelType === 'gpt4' && ($request->host() === 'bla.cn' || $request->host() === 'www.workerman.net')) {
             return null;
         }
 
         // 余额不足则使用每日赠送余额
-        $freeCountPerDay = Common::getDayFreeCount($model);
+        $freeCountPerDay = Common::getDayFreeCount($modelType);
         try {
+            if (!$freeCountPerDay) {
+                throw new BusinessException('余额不足');
+            }
             Limit::perDay($session->getId() . "-ai-$modelType-", $freeCountPerDay);
             $ip = request()->getRealIp();
             // 非内网ip时
@@ -52,12 +69,12 @@ class Base
                     'message_count' => Db::raw('message_count + 1'),
                 ]);
             }
-        // 赠送余额不足则给出提示
+            // 赠送余额不足则给出提示
         } catch (Throwable $e) {
             if ($isVip) {
-                return  "您的账户{$modelType}额度不足，联系管理员开通";
+                return  "您的账户{$modelType}额度不足，如需继续使用请 [续费](/app/ai/user/vip?redirect=".urlencode('/app/ai').")";
             }
-            return "您今天{$modelType}消息已经达到上限，如需继续使用请 联系管理员";
+            return "您今天{$modelType}消息已经达到上限，如需继续使用请 [升级会员](/app/ai/user/vip?redirect=".urlencode('/app/ai').")";
         }
 
         return null;
